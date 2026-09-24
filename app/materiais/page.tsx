@@ -1,5 +1,5 @@
 import WarehouseScreen from "@/components/warehouse";
 
-export default function Home() {
+export default function Page() {
   return <WarehouseScreen />;
 }
