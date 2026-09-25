@@ -1,68 +1,58 @@
 <!-- BEGIN:nextjs-agent-rules -->
-
-AGENTS.md
-Sobre o projeto
-
-Front-end de um sistema de gestão de almoxarifado industrial. Apenas interface visual (Next.js + Tailwind CSS), sem backend real — usar mocks/placeholders para dados. Público-alvo: operadores de chão de fábrica e almoxarifes, muitas vezes usando tablet. Prioridade: simplicidade, legibilidade e rapidez de uso, não estética decorativa.
-
 Stack
-Next.js (App Router)
-Tailwind CSS (sem bibliotecas de UI pesadas — componentes próprios)
-lucide-react para ícones (outline)
-Sem backend/autenticação real nesta fase — tudo mockado
-Identidade visual
-#0F172A — fundo escuro / sidebar
-#0B57D0 — cor primária (botões, links ativos, destaques)
-#F8FAFC — fundo claro / cards / texto claro
-Tipografia: Inter (ou similar), sem serifa
-Evitar excesso de sombras, gradientes ou animações — visual industrial, direto ao ponto
-Estrutura de pastas esperada
-/app
-  /(requisitante)
-    login/
-    pedido/
-    acompanhar/
-  /(almoxarife)
-    login/
-    painel/
-    fila/
-    separacao/
-    qrcode/
-    historico/
-    inventario/
-/components
-  ui/          → Card, Badge, Button, Table, Sidebar, Topbar
-  layout/
-/lib
-  mock-data.ts
-Convenções de código
-Componentes funcionais, TypeScript sempre que possível
-Um componente por arquivo, nomes em PascalCase
-Classes Tailwind direto no JSX; evitar CSS customizado salvo exceções (ex: cores fora da paleta padrão do Tailwind → usar tailwind.config com as cores do projeto nomeadas, ex: bg-brand-dark, bg-brand-primary, bg-brand-light)
-Componentizar qualquer elemento repetido mais de 2x (cards de KPI, badges de status, linhas de tabela)
-Dados mockados centralizados em /lib/mock-data.ts, nunca hardcoded espalhado pelas telas
-Status e badges (usar cores de apoio, sem fugir da paleta base)
-Pendente → laranja/amber
-Em andamento / Em separação → azul (
-#0B57D0)
-Concluído → verde
-Crítico / Atenção → vermelho
+Framework: Next.js (App Router)
+Linguagem: TypeScript (sempre, nunca .jsx/.js puro)
+Estilização: Tailwind CSS
+Animações: Framer Motion (motion / AnimatePresence) como padrão. Usar CSS puro apenas para transições simples de hover/focus.
+Ícones: lucide-react
+Componentes de UI base: shadcn/ui como fundação, customizados — nunca deixar com a "cara padrão" do shadcn
+Fontes: next/font (nunca <link> externo pra fontes)
+Gerenciamento de estado leve: React state/hooks; Zustand se for algo global mais complexo
+Estrutura de pastas
+app/                 # rotas (App Router)
+components/
+  ui/                # componentes base (botão, input, card...)
+  sections/          # blocos maiores de página (Hero, Features...)
+  animations/         # wrappers de animação reutilizáveis
+lib/                 # utils, hooks, helpers
+styles/              # globals.css, tokens
+Princípios de design
+Nunca usar o "look" default de UI genérica (Bootstrap-like, cinza sem graça). Ter uma direção visual clara: paleta definida, tipografia com hierarquia forte, espaçamento generoso.
+Tipografia com personalidade: título grande e ousado, peso variando (400/600/800), não deixar tudo font-normal.
+Paleta consistente: definir tokens de cor no globals.css via CSS variables e reutilizar em todo lugar — nunca hardcodar hex solto no meio do componente.
+Dark mode obrigatório via prefers-color-scheme + toggle manual, usando as CSS variables.
+Microinterações em tudo que é clicável: botões, cards, links devem reagir a hover/tap com transição suave (scale, shadow, cor).
+Espaço em branco é parte do design. Evitar layouts apertados.
+Padrão de animações (Framer Motion)
+Toda seção que entra na viewport deve animar com whileInView (fade + slide sutil, ex: opacity 0→1, y: 20→0), com viewport={{ once: true }}.
+Transições de página/rota usam AnimatePresence no layout.
+Duração padrão: 0.3s–0.6s. Easing padrão: [0.16, 1, 0.3, 1] (ease-out suave) ou easeInOut.
+Listas/grids animam os filhos em stagger (staggerChildren: 0.05–0.1).
+Hover em cards/botões: whileHover={{ scale: 1.02 }}, whileTap={{ scale: 0.98 }}.
+Nunca animar width/height/top/left diretamente — sempre preferir transform e opacity (performance).
+Criar wrappers reutilizáveis em components/animations/ (ex: <FadeIn>, <StaggerContainer>) em vez de repetir as mesmas props de motion em todo componente.
+Respeitar prefers-reduced-motion: reduzir ou remover animações quando o usuário sinalizar essa preferência.
+Componentização
+Componentes pequenos e focados (uma responsabilidade cada).
+Nomes em PascalCase, arquivos NomeDoComponente.tsx.
+Props tipadas com interface, nunca any.
+Extrair lógica repetida em hooks (useX) dentro de lib/hooks/.
+Client Components ("use client") apenas onde há interatividade/estado/animação; o resto fica Server Component por padrão (performance).
 Responsividade
-Mobile-first
-Sidebar colapsa em menu hambúrguer abaixo de md
-Tabelas com scroll horizontal em telas pequenas, nunca quebrar layout
-Botões e áreas de toque grandes o suficiente para uso em tablet com luvas (min. 44px de altura)
-O que NÃO fazer
-Não usar bibliotecas de componentes prontos (Material UI, Chakra, shadcn) — o app deve ficar leve e com identidade própria
-Não implementar lógica de negócio, API calls reais ou autenticação nesta fase
-Não adicionar dados reais/sensíveis — tudo é mock
-Não fugir da paleta de cores definida
-Evitar gastar tokens/ciclos em polimento visual excessivo — o objetivo é uma base funcional e limpa, não um showcase
-Fluxos principais a implementar
-
-Requisitante: Login → Fazer pedido → Acompanhar pedido Almoxarife: Login → Painel (KPIs + prioridades do turno + estoque crítico) → Fila de pedidos (aceitar pedido) → Confirmar separação → Leitor de QR Code → Histórico → Baixar PDF (comprovante)
-
-Referência visual
-
-Seguir como base os elementos identificados no Figma do projeto (a ser fornecido) e no wireframe de cards já validado com o cliente (ver estrutura de sidebar e dashboard do painel do almoxarife).
+Mobile-first sempre: escrever a classe base pensando em mobile, depois sm: md: lg: xl:.
+Testar breakpoints principais: 375px, 768px, 1024px, 1440px.
+Imagens sempre com next/image, nunca <img> puro.
+Acessibilidade
+Todo elemento interativo precisa ser navegável por teclado e ter aria-label quando o texto não for autoexplicativo.
+Contraste mínimo AA (4.5:1 para texto normal).
+Foco visível (focus-visible:ring-2) — nunca outline-none sem substituto.
+Performance
+next/image com sizes corretos e priority só na imagem above-the-fold.
+Lazy-load seções pesadas com dynamic() quando fizer sentido.
+Evitar re-renders desnecessários: useMemo/useCallback onde há custo real, não em tudo.
+Qualidade de código
+ESLint + Prettier configurados; código deve passar no lint antes de considerar a tarefa concluída.
+Sem estilos inline soltos (style={{...}}) exceto para valores dinâmicos (ex: posição calculada em runtime).
+Sem console.log esquecido no código final.
+Commits/PRs pequenos e descritivos.
 <!-- END:nextjs-agent-rules -->

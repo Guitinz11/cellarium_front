@@ -1,2 +1,5 @@
-import WarehouseScreen from "@/components/warehouse";
-export default function Page() { return <WarehouseScreen />; }
+import LoginPage from "@/components/login-page";
+
+export default function Page() {
+  return <LoginPage />;
+}
