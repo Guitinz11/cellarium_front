@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
 
 type Profile = "funcionario" | "almoxarife";
@@ -22,10 +22,10 @@ export default function LoginPage() {
         </video>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-slate-950/30" />
         <div className="relative z-10 flex h-full min-h-[300px] flex-col justify-between p-6 sm:p-10 lg:min-h-screen lg:p-14">
-          <Link href="/login" className="inline-flex w-fit items-center rounded-xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur transition hover:scale-[1.02]" aria-label="Marcon, página inicial de acesso">
-            <Image src="/logo.png" alt="Marcon" width={178} height={88} priority className="h-9 w-auto object-contain sm:h-11" />
+          <Link href="/login" className="inline-flex w-fit items-center rounded-xl bg-white px-4 py-3 shadow-sm transition hover:scale-[1.02]" aria-label="Marcon, página inicial de acesso">
+            <BrandLogo className="w-[174px]" priority />
           </Link>
-          <div className="max-w-xl pb-2 text-white [text-shadow:0_2px_18px_rgba(0,0,0,.55)]">
+          <div data-reveal className="max-w-xl pb-2 text-white [text-shadow:0_2px_18px_rgba(0,0,0,.55)]">
             <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/40 bg-slate-950/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.2em] text-white backdrop-blur-md sm:text-xs"><span className="h-1.5 w-1.5 rounded-full bg-sky-300" />Portal interno Marcon</span>
             <h1 className="max-w-lg text-3xl font-bold leading-[1.06] tracking-[-.04em] sm:text-5xl lg:text-[3.5rem]">Tudo em movimento. <span className="text-sky-300">Do seu jeito.</span></h1>
             <p className="mt-4 max-w-md text-sm font-medium leading-6 text-white sm:mt-5 sm:text-base sm:leading-7">Acesse o portal de materiais e acompanhe a operação com praticidade, onde estiver.</p>
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
       <section className="login-form-side relative flex min-h-[610px] items-center justify-center px-5 py-12 sm:px-10 lg:min-h-screen lg:px-12 xl:px-20">
         <ThemeToggle className="absolute right-5 top-5 !border-slate-200/80 !bg-white/70 !text-slate-600 sm:right-8 sm:top-8" />
-        <div className="w-full max-w-[430px]">
+        <div data-reveal className="w-full max-w-[430px]">
           <div className="mb-9 lg:mb-11">
             <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0b57d0]">Bem-vindo(a)</p>
             <h2 className="mt-3 text-3xl font-bold tracking-[-.04em] text-slate-950 sm:text-[2.6rem]">Acesse sua conta</h2>

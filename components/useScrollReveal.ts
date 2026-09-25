@@ -4,26 +4,44 @@ import { useEffect } from "react";
 
 export function useScrollReveal() {
   useEffect(() => {
-    const targets = "[data-reveal]";
+    const targets = "[data-reveal], [data-reveal-group]";
+    const reveal = (element: HTMLElement) => {
+      element.classList.add("is-visible");
+      element.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((item) => item.classList.add("is-visible"));
+    };
+    const collectTargets = (root: Element) => {
+      const candidates = [
+        ...(root.matches(targets) ? [root] : []),
+        ...root.querySelectorAll<HTMLElement>(targets),
+      ];
+      return candidates.filter((candidate) =>
+        candidate.hasAttribute("data-reveal-group") || !candidate.parentElement?.closest("[data-reveal-group]"),
+      );
+    };
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion || !("IntersectionObserver" in window)) {
-      document.querySelectorAll<HTMLElement>(targets).forEach((element) => element.classList.add("is-visible"));
+      document.querySelectorAll<HTMLElement>(targets).forEach(reveal);
+      document.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((element) => element.classList.add("is-visible"));
       return;
     }
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          (entry.target as HTMLElement).classList.add("is-visible");
+          reveal(entry.target as HTMLElement);
           observer.unobserve(entry.target);
         }
       });
     }, { threshold: 0.12, rootMargin: "0px 0px -32px 0px" });
 
     const observe = (element: Element) => {
-      if (element instanceof HTMLElement && element.matches(targets) && !element.classList.contains("is-visible")) observer.observe(element);
-      element.querySelectorAll<HTMLElement>(targets).forEach((child) => {
-        if (!child.classList.contains("is-visible")) observer.observe(child);
+      const visibleGroup = element.closest<HTMLElement>("[data-reveal-group].is-visible");
+      if (visibleGroup) {
+        if (element instanceof HTMLElement && element.matches("[data-reveal-item]")) element.classList.add("is-visible");
+        element.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((item) => item.classList.add("is-visible"));
+      }
+      collectTargets(element).forEach((target) => {
+        if (!target.classList.contains("is-visible")) observer.observe(target);
       });
     };
 

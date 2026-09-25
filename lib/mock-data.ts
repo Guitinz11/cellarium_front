@@ -17,4 +17,5 @@ export const navItems = [
   { label: "Separação", href: "/separacao", icon: "boxes" },
   { label: "Histórico", href: "/historico", icon: "history" },
   { label: "Inventário", href: "/inventario", icon: "inventory" },
+  { label: "Análises", href: "/analises", icon: "analytics" },
 ];
