@@ -11,10 +11,13 @@ export const stock = [
   { name: "Disco de corte 7″", code: "MAT-00301", quantity: 8, minimum: 12, unit: "un." },
 ];
 
+export const sectors = ["Montagem e Pintura", "Usinagem e Solda", "Corte e Dobra e Estamparia", "Assistência Técnica", "Projetos e Engenharia", "Setor Comercial", "Qualidade e Testes"];
+
 export const navItems = [
   { label: "Painel Geral", href: "/painel", icon: "layout" },
   { label: "Requisições", href: "/fila", icon: "requests" },
   { label: "Separação", href: "/separacao", icon: "boxes" },
+  { label: "Estoque por setor", href: "/estoque-setor", icon: "boxes" },
   { label: "Histórico", href: "/historico", icon: "history" },
   { label: "Inventário", href: "/inventario", icon: "inventory" },
   { label: "Análises", href: "/analises", icon: "analytics" },

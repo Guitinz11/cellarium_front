@@ -2,14 +2,31 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Activity, ArrowRight, Bell, Boxes, Building2, Check, CheckSquare, ChevronDown, Clock3, ClipboardList, Eye, FileText, LayoutDashboard, LogOut, Menu, Package, PackageCheck, Plus, QrCode, Search, ShieldCheck, Truck, UserRound, X } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
-import { navItems, requests, stock } from "@/lib/mock-data";
+import SectorStockPage from "@/components/sector-stock";
+import { navItems, requests, sectors, stock } from "@/lib/mock-data";
 import ThemeToggle from "@/components/theme-toggle";
 
 const iconMap = { layout: LayoutDashboard, requests: ClipboardList, boxes: Boxes, history: Clock3, inventory: Package, analytics: Activity };
-const sectors = ["Montagem e Pintura", "Usinagem e Solda", "Corte e Dobra e Estamparia", "Assist\u00eancia T\u00e9cnica", "Projetos e Engenharia", "Setor Comercial", "Qualidade e Testes"];
+
+function subscribeToClock() {
+  return () => {};
+}
+
+function getTodaySnapshot() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date());
+}
+
+function getServerTodaySnapshot() {
+  return "";
+}
 
 function Button({ children, variant = "primary", className = "", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet" }) {
   const style = variant === "primary" ? "bg-brand text-white hover:bg-brand-strong" : variant === "secondary" ? "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50/50 hover:text-[#0B57D0]" : "text-slate-600 hover:bg-slate-100";
@@ -51,6 +68,7 @@ function Sidebar({ open, close }: { open: boolean; close: () => void }) {
 function Topbar({ onMenu }: { onMenu: () => void }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [readIds, setReadIds] = useState<string[]>([]);
+  const today = useSyncExternalStore(subscribeToClock, getTodaySnapshot, getServerTodaySnapshot);
   const pendingRequest = requests.find((request) => request.status === "Pendente");
   const criticalItem = stock.find((item) => item.quantity < item.minimum);
   const notifications = [
@@ -60,7 +78,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
   const unreadCount = notifications.filter((notification) => !readIds.includes(notification.id)).length;
 
   return <header className="sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
-    <div className="flex items-center gap-3"><button aria-label="Abrir menu" onClick={onMenu} className="rounded-lg border border-slate-200 p-2 text-slate-600 lg:hidden"><Menu size={19} /></button><div><p className="text-sm font-semibold text-slate-900">Bom dia, Carlos</p><p className="mt-0.5 hidden text-xs text-slate-500 sm:block">Quarta-feira, 24 de outubro de 2024</p></div></div>
+    <div className="flex items-center gap-3"><button aria-label="Abrir menu" onClick={onMenu} className="rounded-lg border border-slate-200 p-2 text-slate-600 lg:hidden"><Menu size={19} /></button><div><p className="text-sm font-semibold text-slate-900">Bom dia, Carlos</p><p className="mt-0.5 hidden min-h-4 text-xs capitalize text-slate-500 sm:block">{today}</p></div></div>
     <div className="flex items-center gap-2 sm:gap-3"><label className="hidden items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 sm:flex"><Building2 size={15} className="text-[#0B57D0]"/><span className="text-left"><span className="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Setor atendido</span><select defaultValue={sectors[0]} aria-label="Setor atendido" className="w-[210px] bg-transparent text-xs font-semibold text-slate-700 outline-none">{sectors.map((sector) => <option key={sector}>{sector}</option>)}</select></span><ChevronDown size={14} className="text-slate-400"/></label><ThemeToggle/><div className="relative">
       <button type="button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifica&#231;&#245;es" aria-expanded={notificationsOpen} aria-haspopup="dialog" className="relative rounded-lg border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50 hover:text-[#0B57D0]"><Bell size={18}/>{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{unreadCount}</span>}</button>
       {notificationsOpen && <section role="dialog" aria-label="Notifica&#231;&#245;es" className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xl"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><div><h2 className="text-sm font-bold text-slate-900">Notifica&#231;&#245;es</h2><p className="mt-0.5 text-[11px] text-slate-500">Atualiza&#231;&#245;es da opera&#231;&#227;o</p></div><button type="button" aria-label="Fechar notifica&#231;&#245;es" onClick={() => setNotificationsOpen(false)} className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={16}/></button></div>{notifications.length ? <div className="divide-y divide-slate-100">{notifications.map((notification) => <Link key={notification.id} href={notification.href} onClick={() => { setReadIds((current) => current.includes(notification.id) ? current : [...current, notification.id]); setNotificationsOpen(false); }} className="flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50"><span className={"mt-1 h-2 w-2 shrink-0 rounded-full " + (readIds.includes(notification.id) ? "bg-slate-200" : "bg-blue-600")}/><span className="min-w-0"><span className="block text-xs font-semibold text-slate-800">{notification.title}</span><span className="mt-1 block text-[11px] text-slate-500">{notification.detail}</span></span><ArrowRight size={14} className="mt-1 shrink-0 text-slate-400"/></Link>)}</div> : <p className="px-4 py-6 text-center text-xs text-slate-500">Nenhuma notifica&#231;&#227;o no momento.</p>}{unreadCount > 0 && <button type="button" onClick={() => setReadIds(notifications.map((notification) => notification.id))} className="w-full border-t border-slate-100 px-4 py-3 text-xs font-semibold text-[#0B57D0] transition hover:bg-blue-50">Marcar todas como lidas</button>}</section>}
@@ -140,8 +158,33 @@ function RequestsTable({ compact = false, onAccept, acceptedIds = [], onViewDeta
   return <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left"><thead><tr className="border-y border-slate-100 bg-slate-50/80 text-[10px] font-semibold uppercase tracking-wide text-slate-500"><th className="px-5 py-3">Requisi&#231;&#227;o</th><th className="px-4 py-3">Ordem serv.</th><th className="px-4 py-3">Solicitante</th><th className="px-4 py-3">Data</th><th className="px-4 py-3">Status</th><th className="px-5 py-3 text-right">A&#231;&#245;es</th></tr></thead><tbody data-reveal-group>{displayedRows.map((row) => { const accepted = acceptedIds.includes(row.id); const status = accepted ? "Em andamento" : row.status; return <tr data-reveal-item key={row.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"><td className="px-5 py-4 font-mono text-xs font-semibold text-slate-800">{row.id}</td><td className="px-4 py-4 font-mono text-xs text-slate-600">{row.order}</td><td className="px-4 py-4 text-xs font-medium text-slate-800">{row.requester}</td><td className="px-4 py-4 text-xs text-slate-500">{row.date}</td><td className="px-4 py-4"><StatusBadge status={status}/></td><td className="px-5 py-4 text-right">{onViewDetails && row.status === "Concluído" ? <Button variant="secondary" onClick={() => onViewDetails(row)} className="!min-h-9 !px-3 !text-xs"><Eye size={14}/>Ver detalhes</Button> : onAccept && row.status === "Pendente" ? <Button onClick={() => onAccept(row.id)} className="!min-h-9 !px-3 !text-xs" disabled={accepted}>{accepted ? <><Check size={14}/>Aceito</> : "Aceitar pedido"}</Button> : <Link href={row.status === "Pendente" ? "/fila" : "/separacao"} className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:border-blue-200 hover:text-[#0B57D0]">{row.status === "Pendente" ? "Aceitar pedido" : "Ver detalhes"}</Link>}</td></tr>; })}</tbody></table>{displayedRows.length === 0 && <p className="px-5 py-12 text-center text-sm text-slate-500">Nenhuma requisi&#231;&#227;o corresponde a sua busca.</p>}</div>;
 }
 function Dashboard() {
-  return <><PageHeading eyebrow="Quarta-feira, 24 de outubro" title="Painel geral" description="Acompanhe a operação do almoxarifado em tempo real." action={<Link href="/fila"><Button><ClipboardList size={17}/>Ver fila de pedidos</Button></Link>}/>
-    <div data-reveal-group className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><KpiCard label="Pedidos pendentes" value="08" note="2 novos neste turno" trend="+12%" icon={ClipboardList} accent="bg-amber-50 text-amber-700"/><KpiCard label="Em separação" value="05" note="3 com prioridade alta" trend="+2" icon={Boxes} accent="bg-blue-50 text-[#0B57D0]"/><KpiCard label="Concluídos hoje" value="24" note="vs. 19 ontem" trend="+26%" icon={PackageCheck} accent="bg-emerald-50 text-emerald-700"/><KpiCard label="Estoque crítico" value="03" note="Abaixo do mínimo" trend="Atenção" icon={Activity} accent="bg-rose-50 text-rose-700"/></div>
+  const criticalItems = stock.filter((item) => item.quantity < item.minimum);
+
+  return <>
+    <div data-reveal className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+      <div>
+        <p className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-slate-500"><span className="h-2 w-2 rounded-full bg-emerald-500"/>Centro de operações</p>
+        <h1 className="text-3xl font-semibold text-slate-950">Painel geral</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-500">Acompanhe o ritmo do almoxarifado e as prioridades do turno.</p>
+      </div>
+      <Link href="/fila"><Button><ClipboardList size={17}/>Ver fila de pedidos</Button></Link>
+    </div>
+    <section data-reveal className="mb-7 flex flex-col justify-between gap-5 border-y border-amber-200 border-l-[3px] border-l-amber-500 bg-amber-50/70 px-4 py-5 sm:flex-row sm:items-center sm:px-6">
+      <div className="flex items-start gap-4">
+        <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-800"><Package size={19}/></span>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-amber-800">Prioridade operacional</p>
+          <h2 className="mt-1 text-base font-semibold text-slate-900">{criticalItems.length ? `${criticalItems.length} materiais abaixo do mínimo` : "Estoque dentro do nível definido"}</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-600">{criticalItems.length ? "Revise os saldos críticos para evitar interrupções na operação." : "Não há materiais com saldo abaixo do mínimo neste momento."}</p>
+        </div>
+      </div>
+      <Link href="/inventario"><Button variant="secondary" className="shrink-0 border-amber-300 bg-white text-amber-900 hover:border-amber-400 hover:bg-amber-100/60 hover:text-amber-950"><span>Revisar inventário</span><ArrowRight size={15}/></Button></Link>
+    </section>
+    <div data-reveal-group className="mb-8 grid grid-cols-1 divide-y divide-slate-200 border-y border-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <article data-reveal-item className="px-4 py-4 sm:pl-1"><div className="flex items-center gap-2 text-xs font-medium text-slate-500"><ClipboardList size={15} className="text-amber-700"/>Pedidos pendentes</div><div className="mt-2 flex items-baseline gap-2"><p className="text-[30px] font-semibold leading-none tabular-nums text-slate-950">08</p><span className="text-[11px] font-medium text-amber-800">2 novos neste turno</span></div></article>
+      <article data-reveal-item className="px-4 py-4 sm:pl-6"><div className="flex items-center gap-2 text-xs font-medium text-slate-500"><Boxes size={15} className="text-blue-700"/>Em separação</div><div className="mt-2 flex items-baseline gap-2"><p className="text-[30px] font-semibold leading-none tabular-nums text-slate-950">05</p><span className="text-[11px] font-medium text-slate-500">3 com prioridade alta</span></div></article>
+      <article data-reveal-item className="px-4 py-4 sm:pl-6"><div className="flex items-center gap-2 text-xs font-medium text-slate-500"><PackageCheck size={15} className="text-emerald-700"/>Concluídos hoje</div><div className="mt-2 flex items-baseline gap-2"><p className="text-[30px] font-semibold leading-none tabular-nums text-slate-950">24</p><span className="text-[11px] font-medium text-emerald-800">vs. 19 ontem</span></div></article>
+    </div>
     <div data-reveal-group className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-[1.65fr_1fr]"><Card><div className="flex items-center justify-between p-5"><div><h2 className="text-sm font-bold text-slate-900">Prioridades do turno</h2><p className="mt-1 text-xs text-slate-500">Pedidos aguardando separação</p></div><Link href="/fila" className="text-xs font-semibold text-[#0B57D0] hover:underline">Ver fila <ArrowRight size={13} className="ml-1 inline"/></Link></div><RequestsTable compact/></Card>
     <Card><div className="flex items-center justify-between p-5"><div><h2 className="text-sm font-bold text-slate-900">Estoque crítico</h2><p className="mt-1 text-xs text-slate-500">Materiais abaixo do mínimo</p></div><Link href="/inventario" className="text-xs font-semibold text-[#0B57D0] hover:underline">Inventário <ArrowRight size={13} className="ml-1 inline"/></Link></div><div data-reveal-group className="divide-y divide-slate-100">{stock.map((item) => <div data-reveal-item key={item.code} className="flex items-center justify-between gap-3 px-5 py-4"><div className="flex min-w-0 items-center gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600"><Package size={17}/></div><div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1 text-[10px] text-slate-400">{item.code} - mínimo {item.minimum}</p></div></div><div className="shrink-0 text-right"><p className="text-sm font-bold text-rose-700">{item.quantity} <span className="text-[10px] font-medium">{item.unit}</span></p><StatusBadge status="Crítico"/></div></div>)}</div><div className="border-t border-slate-100 p-4"><Link href="/inventario" className="flex min-h-10 items-center justify-center rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50">Ver inventário completo <ArrowRight size={14} className="ml-2"/></Link></div></Card></div>
     <DemandAnalytics/>
@@ -260,15 +303,46 @@ function LoginChoice() {
 function RequesterLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const requesting = pathname === "/pedido" || pathname === "/materiais";
-  return <div className="min-h-screen bg-[#F4F7FB]"><header className="border-b border-slate-200 bg-white"><div className="mx-auto flex min-h-[72px] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"><Link href="/materiais" aria-label="Marcon, portal do requisitante" className="flex shrink-0 flex-col gap-1"><BrandLogo className="w-[132px] sm:w-[154px]"/><span className="text-[8px] font-semibold uppercase tracking-[.13em] text-slate-400">Portal do requisitante</span></Link><nav className="flex items-center gap-1 sm:gap-2"><Link className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold sm:px-4 ${requesting ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/materiais"><Plus size={15}/> <span className="hidden sm:inline">Nova requisi&#231;&#227;o</span><span className="sm:hidden">Solicitar</span></Link><Link className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold sm:px-4 ${pathname === "/acompanhar" ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/acompanhar"><Clock3 size={15}/> <span className="hidden sm:inline">Acompanhar pedido</span><span className="sm:hidden">Pedidos</span></Link></nav><ThemeToggle className="h-9 w-9"/><div className="hidden items-center gap-2 border-l border-slate-200 pl-4 lg:flex"><div className="h-8 w-8 rounded-full bg-slate-100 text-center text-xs font-semibold leading-8 text-slate-700">JA</div><div><p className="text-xs font-semibold text-slate-800">Jos&#233; Alencar</p><p className="text-[10px] text-slate-400">Manuten&#231;&#227;o</p></div><Link href="/login" className="ml-2 text-xs font-medium text-slate-500 hover:text-[#0B57D0]">Sair</Link></div></div></header><main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9">{children}</main><footer className="mx-auto max-w-6xl px-4 pb-6 text-[10px] text-slate-400 sm:px-6">TI Marcon | Portal do requisitante | Ambiente demonstrativo</footer></div>;
+  const sectorStock = pathname === "/meu-estoque";
+  return (
+    <div className="min-h-screen bg-[#F4F7FB]">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex min-h-[72px] max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
+          <Link href="/materiais" aria-label="Marcon, portal do requisitante" className="flex shrink-0 flex-col gap-1">
+            <BrandLogo className="w-[112px] sm:w-[154px]"/>
+            <span className="text-[8px] font-semibold uppercase tracking-[.13em] text-slate-400">Portal do requisitante</span>
+          </Link>
+          <nav className="flex items-center gap-1">
+            <Link aria-label="Nova requisição" title="Nova requisição" className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-semibold md:px-3 ${requesting ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/materiais">
+              <Plus size={15}/><span className="hidden md:inline">Nova requisição</span>
+            </Link>
+            <Link aria-label="Acompanhar pedido" title="Acompanhar pedido" className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-semibold md:px-3 ${pathname === "/acompanhar" ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/acompanhar">
+              <Clock3 size={15}/><span className="hidden md:inline">Acompanhar pedido</span>
+            </Link>
+            <Link aria-label="Estoque do setor" title="Estoque do setor" className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-semibold md:px-3 ${sectorStock ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/meu-estoque">
+              <Boxes size={15}/><span className="hidden md:inline">Meu estoque</span>
+            </Link>
+          </nav>
+          <ThemeToggle className="h-9 w-9 shrink-0"/>
+          <div className="hidden items-center gap-2 border-l border-slate-200 pl-4 lg:flex">
+            <div className="h-8 w-8 rounded-full bg-slate-100 text-center text-xs font-semibold leading-8 text-slate-700">JA</div>
+            <div><p className="text-xs font-semibold text-slate-800">José Alencar</p><p className="text-[10px] text-slate-400">Montagem e Pintura</p></div>
+            <Link href="/login" className="ml-2 text-xs font-medium text-slate-500 hover:text-[#0B57D0]">Sair</Link>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9">{children}</main>
+      <footer className="mx-auto max-w-6xl px-4 pb-6 text-[10px] text-slate-400 sm:px-6">TI Marcon | Portal do requisitante | Ambiente demonstrativo</footer>
+    </div>
+  );
 }
 export default function WarehouseScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   if (pathname === "/" || pathname === "/login") return <LoginChoice/>;
   if (pathname.startsWith("/login")) return <LoginPage requester={pathname.includes("requisitante")}/>;
-  if (pathname === "/materiais" || pathname === "/pedido" || pathname === "/acompanhar") return <RequesterLayout>{pathname === "/materiais" ? <MaterialSelection/> : pathname === "/pedido" ? <RequestForm/> : <TrackingPage/>}</RequesterLayout>;
-  const content: Record<string, ReactNode> = { "/": <Dashboard/>, "/painel": <Dashboard/>, "/analises": <AnalyticsPage/>, "/fila": <QueuePage/>, "/pedido": <RequestForm/>, "/materiais": <MaterialSelection/>, "/acompanhar": <TrackingPage/>, "/separacao": <SeparationPage/>, "/qrcode": <QrPage/>, "/historico": <HistoryPage/>, "/inventario": <InventoryPage/> };
+  if (pathname === "/materiais" || pathname === "/pedido" || pathname === "/acompanhar" || pathname === "/meu-estoque") return <RequesterLayout>{pathname === "/materiais" ? <MaterialSelection/> : pathname === "/pedido" ? <RequestForm/> : pathname === "/acompanhar" ? <TrackingPage/> : <SectorStockPage/>}</RequesterLayout>;
+  const content: Record<string, ReactNode> = { "/": <Dashboard/>, "/painel": <Dashboard/>, "/analises": <AnalyticsPage/>, "/fila": <QueuePage/>, "/pedido": <RequestForm/>, "/materiais": <MaterialSelection/>, "/acompanhar": <TrackingPage/>, "/separacao": <SeparationPage/>, "/estoque-setor": <SectorStockPage isWarehouse/>, "/qrcode": <QrPage/>, "/historico": <HistoryPage/>, "/inventario": <InventoryPage/> };
   return <div className="warehouse-app text-slate-900"><Sidebar open={menuOpen} close={() => setMenuOpen(false)}/><div className="min-h-screen lg:pl-[260px]"><Topbar onMenu={() => setMenuOpen(true)}/><main className="mx-auto max-w-[1500px] px-4 py-7 sm:px-6 sm:py-9 lg:px-9">{content[pathname] || <Dashboard/>}</main><footer className="mx-auto max-w-[1500px] px-4 pb-6 text-[10px] text-slate-400 sm:px-6 lg:px-9">TI Marcon · Sistema de gestão de almoxarifado · Ambiente demonstrativo</footer></div></div>;
 }
 

@@ -6,6 +6,9 @@ export function useScrollReveal() {
   useEffect(() => {
     const targets = "[data-reveal], [data-reveal-group]";
     const reveal = (element: HTMLElement) => {
+      Array.from(element.children)
+        .filter((child): child is HTMLElement => child instanceof HTMLElement && child.matches("[data-reveal-item]"))
+        .forEach((item, index) => item.style.setProperty("--reveal-delay", `${Math.min(index, 8) * 60}ms`));
       element.classList.add("is-visible");
       element.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((item) => item.classList.add("is-visible"));
     };
