@@ -2,19 +2,19 @@
 
 :root {
   color-scheme: light;
-  --background: #f5f7fa;
+  --background: #f2f4f1;
   --surface: #ffffff;
-  --foreground: #172536;
-  --muted: #657487;
-  --line: #e2e8ef;
-  --brand: #245bb2;
-  --brand-strong: #194a99;
-  --brand-soft: #edf3fc;
+  --foreground: #202a24;
+  --muted: #626d65;
+  --line: #dce2dc;
+  --brand: #24558a;
+  --brand-strong: #1b426d;
+  --brand-soft: #edf2f5;
   --success: #18794e;
   --warning: #9a6100;
   --danger: #b33a3a;
-  --radius-card: 10px;
-  --shadow-card: 0 1px 2px rgb(18 37 58 / 2%), 0 5px 16px rgb(18 37 58 / 2%);
+  --radius-card: 8px;
+  --shadow-card: 0 1px 2px rgb(25 38 29 / 3%);
 }
 
 @theme inline {
@@ -52,9 +52,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   box-shadow: var(--shadow-card);
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
-.card-interactive:hover { border-color: #ced9e6; box-shadow: 0 8px 28px rgb(18 37 58 / 6%); }
+.card-interactive:hover { border-color: #c5d0c7; box-shadow: 0 4px 14px rgb(25 38 29 / 5%); }
 .theme-toggle { border-color: var(--line); background: var(--surface); color: var(--muted); transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
-.theme-toggle:hover { border-color: #c8d4e2; color: var(--brand); }
+.theme-toggle:hover { border-color: #c5d0c7; color: var(--brand); }
 .warehouse-app { min-height: 100vh; background: var(--background); }
 .reveal-enabled [data-reveal],
 .reveal-enabled [data-reveal-item] {

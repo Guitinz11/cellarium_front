@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Bell, Boxes, Check, Package, Search, Send } from "lucide-react";
+import { ArrowDownToLine, Bell, Boxes, Check, Package, Search, Send } from "lucide-react";
 import { sectors } from "@/lib/mock-data";
 
 type SectorItem = {
@@ -151,7 +151,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
 
       <section aria-label="Avisos do almoxarifado" className="mb-7">
         <div className="mb-3 flex items-center gap-2"><Bell size={15} className="text-amber-700"/><h2 className="text-sm font-semibold text-slate-900">Avisos do almoxarifado</h2><span className="text-[11px] text-slate-400">{sectorMessages.length}</span></div>
-        {sectorMessages.length ? <div className="divide-y divide-amber-200 border-y border-amber-200 bg-amber-50/70">
+        {sectorMessages.length ? <div className="divide-y divide-amber-200 border-l-2 border-amber-500 bg-amber-50/60">
           {sectorMessages.slice(0, 3).map((message) => <div key={message.id} className="flex items-start gap-3 px-4 py-3">
             <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-800"><Package size={14}/></span>
             <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-slate-900">{message.itemName} <span className="font-normal text-slate-500">· {message.code}</span></p><p className="mt-1 text-xs leading-5 text-slate-600">{message.text}</p></div>
@@ -178,7 +178,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
               <div className="flex flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
                 <label className="sr-only" htmlFor={`amount-${item.code}`}>Quantidade para ajuste de {item.name}</label>
                 <input id={`amount-${item.code}`} type="number" min="1" max="9999" value={amount} onChange={(event) => setAmounts((current) => ({ ...current, [item.code]: Math.max(1, Number(event.target.value) || 1) }))} className="h-9 w-[72px] rounded-md border border-slate-200 bg-white px-2 text-center text-xs tabular-nums text-slate-800"/>
-                <button type="button" onClick={() => adjustQuantity(item.code, amount)} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><ArrowUpFromLine size={14}/><span>Registrar sobra</span></button>
+                <a href={`/Fluxo%20automatizado%20do%20estoque.html?sector=${encodeURIComponent(item.sector)}&code=${encodeURIComponent(item.code)}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><ArrowDownToLine size={14}/><span>Ir para artefato</span></a>
                 <button type="button" onClick={() => adjustQuantity(item.code, -amount)} disabled={item.quantity === 0} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"><ArrowDownToLine size={14}/><span>Dar baixa</span></button>
                 {isWarehouse && item.quantity > 0 && <button type="button" onClick={() => sendAvailabilityMessage(item)} disabled={sentMessages.includes(item.code)} className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-[#0B57D0] transition hover:bg-blue-50 disabled:text-emerald-700"><span>{sentMessages.includes(item.code) ? <Check size={14}/> : <Send size={14}/>}</span><span>{sentMessages.includes(item.code) ? "Aviso enviado" : "Avisar setor"}</span></button>}
               </div>
