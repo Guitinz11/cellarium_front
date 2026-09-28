@@ -106,7 +106,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   --brand-strong: #b4d0fa;
   --brand-soft: #1a2d45;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 12%), 0 8px 24px rgb(0 0 0 / 12%);
-  --color-white: #131f2d;
   --color-slate-50: #172433;
   --color-slate-100: #1d2c3d;
   --color-slate-200: #2a3a4c;
@@ -117,6 +116,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   --color-slate-700: #d0d9e2;
   --color-slate-800: #e0e7ee;
   --color-slate-900: #eef3f7;
+  --color-slate-950: #f4f7fa;
   --color-blue-50: #172d47;
   --color-blue-100: #1e3a5b;
   --color-blue-200: #2a4d76;
@@ -137,12 +137,14 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 
 .dark .bg-\[\#F4F7FB\], .dark .bg-\[\#f4f7fb\], .dark .bg-\[\#f1f5fa\] { background-color: var(--background); }
+.dark .bg-white { background-color: var(--surface); }
 .dark .bg-\[\#0B57D0\] { background-color: #376cb8; }
 .dark .text-\[\#0B57D0\], .dark .text-\[\#0b57d0\] { color: var(--brand); }
 .dark .border-\[\#0B57D0\] { border-color: var(--brand); }
 .dark .login-form-side { background-color: var(--background); }
 .dark .login-showcase { color-scheme: light; }
 .dark .warehouse-app { background: var(--background); }
+.warehouse-app header label select { appearance: none; }
 .dark .card-interactive:hover { border-color: #405369; }
 
 @media (prefers-reduced-motion: reduce) {

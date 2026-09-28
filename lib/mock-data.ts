@@ -16,7 +16,7 @@ export const sectors = ["Montagem e Pintura", "Usinagem e Solda", "Corte e Dobra
 export const navItems = [
   { label: "Painel Geral", href: "/painel", icon: "layout" },
   { label: "Requisições", href: "/fila", icon: "requests" },
-  { label: "Separação", href: "/separacao", icon: "boxes" },
+  { label: "Separação", href: "/separacao", icon: "checkSquare" },
   { label: "Estoque por setor", href: "/estoque-setor", icon: "boxes" },
   { label: "Histórico", href: "/historico", icon: "history" },
   { label: "Inventário", href: "/inventario", icon: "inventory" },
