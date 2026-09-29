@@ -145,6 +145,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .dark .login-showcase { color-scheme: light; }
 .dark .warehouse-app { background: var(--background); }
 .warehouse-app header label select { appearance: none; }
+.warehouse-app header > div:last-child > div:last-child { display: none; }
 .dark .card-interactive:hover { border-color: #405369; }
 
 @media (prefers-reduced-motion: reduce) {
