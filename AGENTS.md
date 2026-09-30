@@ -1,5 +1,4 @@
 <!-- BEGIN:nextjs-agent-rules -->
-Stack
 Framework: Next.js (App Router)
 Linguagem: TypeScript (sempre, nunca .jsx/.js puro)
 Estilização: Tailwind CSS

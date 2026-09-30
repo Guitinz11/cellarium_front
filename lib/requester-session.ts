@@ -18,6 +18,10 @@ export function getRequesterSector(): string {
   return window.localStorage.getItem(employeeSectorKey) ?? "";
 }
 
+export function getUserRole(): string {
+  return window.localStorage.getItem("cellarium-user-role") ?? "";
+}
+
 export function getServerRequesterValue(): string {
   return "";
 }

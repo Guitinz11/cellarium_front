@@ -21,12 +21,14 @@ export default function LoginPage() {
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (profile === "funcionario") {
+      window.localStorage.setItem("cellarium-user-role", "requisitante");
       window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
       window.localStorage.setItem("cellarium-requester-sector", sector);
       window.dispatchEvent(new Event("cellarium-requester-profile-updated"));
       router.push("/materiais");
       return;
     }
+    window.localStorage.setItem("cellarium-user-role", "almoxarife");
     router.push("/painel");
   }
 

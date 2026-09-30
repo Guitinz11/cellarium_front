@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { materialsCatalog, sectors } from "@/lib/mock-data";
-import { getAllRequests, saveSubmittedRequest, type RequestRecord } from "@/lib/request-storage";
-import { getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
+import { getAllRequests, getServerRequests, saveSubmittedRequest, subscribeToRequests, type RequestRecord } from "@/lib/request-storage";
+import { getRequesterCode, getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
 
 export default function RequestForm() {
   const router = useRouter();
@@ -17,8 +17,11 @@ export default function RequestForm() {
     const item = materialsCatalog.find((product) => product.code === code);
     return item ? [{ item, quantity: Number(quantities[index]) || 1 }] : [];
   });
-  const [requester, setRequester] = useState("");
-  const [order, setOrder] = useState("");
+  const requesterCode = useSyncExternalStore(subscribeToRequesterSession, getRequesterCode, getServerRequesterValue);
+  const requester = requesterCode;
+  const allRequests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
+  const nextOrderNumber = Math.max(820, ...allRequests.map((request) => Number(request.order.match(/\d+/)?.[0] ?? 0))) + 1;
+  const order = `OS-${nextOrderNumber}`;
   const sector = useSyncExternalStore(subscribeToRequesterSession, getRequesterSector, getServerRequesterValue);
   const [shift, setShift] = useState("");
   const [neededDate, setNeededDate] = useState("");
@@ -30,8 +33,8 @@ export default function RequestForm() {
     const nextId = Math.max(2048, ...matchingIds) + 1;
     const request: RequestRecord = {
       id: `REQ-${nextId}`,
-      order: order.trim(),
-      requester: requester.trim(),
+      order,
+      requester,
       sector,
       shift,
       employeeCode: window.localStorage.getItem("cellarium-requester-code") ?? undefined,
@@ -49,11 +52,11 @@ export default function RequestForm() {
     <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]"><section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-7"><div className="mb-6 border-b border-slate-100 pb-4"><h2 className="text-sm font-bold text-slate-900">Dados da solicitação</h2><p className="mt-1 text-xs text-slate-500">Os campos com * são obrigatórios.</p></div>
       <form onSubmit={submitRequest}>
         <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Nome do solicitante *</span><input required value={requester} onChange={(event) => setRequester(event.target.value)} placeholder="Ex.: José Alencar" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
-          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Ordem de serviço *</span><input required value={order} onChange={(event) => setOrder(event.target.value)} placeholder="Ex.: OS-821" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Nome do solicitante</span><input readOnly value={requester} placeholder="Identificado pelo login" className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800"/></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Ordem de serviço</span><input readOnly value={order} className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm text-slate-800"/></label>
           <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Setor *</span><select required value={sector} disabled className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:opacity-80"><option value="">Selecione seu setor no acesso</option>{sectors.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Turno *</span><select required value={shift} onChange={(event) => setShift(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700"><option value="">Selecione o turno</option><option>1º turno</option><option>2º turno</option><option>3º turno</option></select></label>
-          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Data necessária *</span><input required type="date" value={neededDate} onChange={(event) => setNeededDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Data desejada da entrega *</span><input required type="date" value={neededDate} onChange={(event) => setNeededDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
         </div>
         <div className="mt-6"><div className="mb-3 flex items-center justify-between"><h3 className="text-xs font-bold text-slate-800">Material solicitado</h3><Link href="/materiais" className="text-xs font-semibold text-[#0B57D0] hover:underline">Escolher outro</Link></div><div className="space-y-2">{selectedItems.length ? selectedItems.map(({ item, quantity }) => <div key={item.code} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3"><div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{item.code}</p></div><p className="text-right text-xs font-semibold text-slate-700">Qtd.: {quantity}</p></div>) : <div className="rounded-lg border border-dashed border-slate-300 p-4 text-xs text-slate-500">Nenhum material selecionado. <Link href="/materiais" className="font-semibold text-[#0B57D0]">Escolher materiais</Link></div>}</div></div>
         <label className="mt-5 block"><span className="mb-2 block text-xs font-semibold text-slate-700">Observações</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Descreva a aplicação ou informações adicionais..." className="w-full resize-y rounded-lg border border-slate-200 p-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>

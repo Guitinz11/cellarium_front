@@ -1,8 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useSyncExternalStore } from "react";
 import { ArrowDownToLine, Bell, Boxes, Check, Package, Search, Send } from "lucide-react";
 import { sectors } from "@/lib/mock-data";
+import { getAllRequests, getServerRequests, subscribeToRequests, updateRequestStatus } from "@/lib/request-storage";
+import { getRequesterCode, getUserRole, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
 
 type SectorItem = {
   code: string;
@@ -83,6 +85,13 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
   const [search, setSearch] = useState("");
   const [amounts, setAmounts] = useState<Record<string, number>>({});
   const [sentMessages, setSentMessages] = useState<string[]>([]);
+  const requests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
+  const openOrders = requests.filter((request) => request.status === "Em andamento" && (isWarehouse || request.sector === sector));
+  const [closingOrder, setClosingOrder] = useState<(typeof requests)[number] | null>(null);
+  const [leftovers, setLeftovers] = useState<Record<string, string>>({});
+  const userRole = useSyncExternalStore(subscribeToRequesterSession, getUserRole, getServerRequesterValue);
+  const requesterCode = useSyncExternalStore(subscribeToRequesterSession, getRequesterCode, getServerRequesterValue);
+  const canCloseOrder = !isWarehouse && userRole !== "almoxarife" && (userRole === "requisitante" || Boolean(requesterCode));
 
   function updateData(update: (current: SectorStockData) => SectorStockData) {
     const next = update(data);
@@ -134,7 +143,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
         <div>
           <p className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-slate-500"><Boxes size={14} className="text-[#0B57D0]"/>Controle de materiais</p>
           <h1 className="text-3xl font-semibold text-slate-950">{heading}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Consulte os saldos locais, registre sobras e dê baixa nos materiais retirados.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Feche as ordens após o uso e informe manualmente as quantidades que sobraram.</p>
         </div>
         {isWarehouse && <label className="flex flex-col gap-1.5 text-[11px] font-semibold text-slate-500">Setor
           <select value={sector} onChange={(event) => setSector(event.target.value)} className="h-11 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800">
@@ -148,6 +157,13 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
         <div data-reveal-item className="px-3"><p className="text-xs font-medium text-slate-500">Unidades no setor</p><p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{totalUnits}</p></div>
         <div data-reveal-item className="px-3"><p className="text-xs font-medium text-slate-500">No nível mínimo ou abaixo</p><p className={`mt-1 text-2xl font-semibold tabular-nums ${lowStockCount ? "text-amber-800" : "text-emerald-800"}`}>{lowStockCount}</p></div>
       </div>
+
+      <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-label="Ordens de serviço em andamento">
+        <h2 className="text-sm font-bold text-slate-900">OS em andamento</h2>
+        <p className="mt-1 text-xs text-slate-500">Após utilizar os materiais, feche a OS e registre as sobras.</p>
+        {openOrders.length ? <div className="mt-4 divide-y divide-slate-100">{openOrders.map((request) => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="font-mono text-xs font-bold text-[#0B57D0]">{request.order} · {request.id}</p><p className="mt-1 text-xs text-slate-600">{request.requester} · {request.items}</p></div>{canCloseOrder && <button type="button" onClick={() => { setClosingOrder(request); setLeftovers({}); }} className="min-h-9 rounded-lg bg-[#0B57D0] px-3 text-xs font-semibold text-white hover:bg-blue-800">Fechar OS</button>}</div>)}</div> : <p className="mt-4 text-xs text-slate-500">Nenhuma OS em andamento para este setor.</p>}
+      </section>
+      {canCloseOrder && closingOrder && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-7"><h2 id="close-order-title" className="text-lg font-bold text-slate-900">Fechar {closingOrder.order}</h2><p className="mt-1 text-xs text-slate-500">Informe a quantidade que sobrou para cada material. Use 0 quando não houver sobra.</p><div className="mt-5 space-y-3">{closingOrder.items.split(";").map((entry, index) => <label key={`${closingOrder.id}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"><span className="text-xs text-slate-700">{entry.trim()}</span><input aria-label={`Quantidade sobrante: ${entry.trim()}`} type="number" min="0" value={leftovers[String(index)] ?? "0"} onChange={(event) => setLeftovers((current) => ({ ...current, [String(index)]: event.target.value }))} className="h-10 w-20 rounded-md border border-slate-200 px-2 text-center text-sm"/></label>)}</div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setClosingOrder(null)} className="min-h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700">Cancelar</button><button type="button" onClick={() => { updateRequestStatus(closingOrder.id, "Concluído", Object.values(leftovers).join(",")); setClosingOrder(null); }} className="min-h-10 rounded-lg bg-[#0B57D0] px-4 text-sm font-semibold text-white">Salvar sobras e fechar</button></div></section></div>}
 
       <section aria-label="Avisos do almoxarifado" className="mb-7">
         <div className="mb-3 flex items-center gap-2"><Bell size={15} className="text-amber-700"/><h2 className="text-sm font-semibold text-slate-900">Avisos do almoxarifado</h2><span className="text-[11px] text-slate-400">{sectorMessages.length}</span></div>
@@ -178,7 +194,6 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
               <div className="flex flex-wrap items-center gap-2 pl-[52px] sm:pl-0">
                 <label className="sr-only" htmlFor={`amount-${item.code}`}>Quantidade para ajuste de {item.name}</label>
                 <input id={`amount-${item.code}`} type="number" min="1" max="9999" value={amount} onChange={(event) => setAmounts((current) => ({ ...current, [item.code]: Math.max(1, Number(event.target.value) || 1) }))} className="h-9 w-[72px] rounded-md border border-slate-200 bg-white px-2 text-center text-xs tabular-nums text-slate-800"/>
-                <a href={`/Fluxo%20automatizado%20do%20estoque.html?sector=${encodeURIComponent(item.sector)}&code=${encodeURIComponent(item.code)}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><ArrowDownToLine size={14}/><span>Ir para artefato</span></a>
                 <button type="button" onClick={() => adjustQuantity(item.code, -amount)} disabled={item.quantity === 0} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"><ArrowDownToLine size={14}/><span>Dar baixa</span></button>
                 {isWarehouse && item.quantity > 0 && <button type="button" onClick={() => sendAvailabilityMessage(item)} disabled={sentMessages.includes(item.code)} className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-[#0B57D0] transition hover:bg-blue-50 disabled:text-emerald-700"><span>{sentMessages.includes(item.code) ? <Check size={14}/> : <Send size={14}/>}</span><span>{sentMessages.includes(item.code) ? "Aviso enviado" : "Avisar setor"}</span></button>}
               </div>

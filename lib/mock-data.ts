@@ -1,5 +1,6 @@
-export const requests = [
+﻿export const requests = [
   { id: "REQ-2048", order: "OS-821", requester: "José Alencar", sector: "Montagem e Pintura", date: "24/10/2024", status: "Pendente", items: "Bico de Contato MIG M6 x 28 x 1.2mm · 4 un." },
+  { id: "REQ-2049", order: "OS-822", requester: "João Guilherme", sector: "Montagem e Pintura", date: "30/09/2026", status: "Em andamento", items: "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm · 2 Rolo; Luva de Raspa Cano Longo · 1 Par" },
   { id: "REQ-2045", order: "OS-819", requester: "Marcos Souza", sector: "Usinagem e Solda", date: "24/10/2024", status: "Em andamento", items: "Disco de Corte para Aço Carbono 4.1/2\" x 1.0mm · 12 un." },
   { id: "REQ-2041", order: "OS-812", requester: "Felipe Neto", sector: "Qualidade e Testes", date: "23/10/2024", status: "Concluído", items: "Luva de Raspa Cano Longo · 6 un." },
   { id: "REQ-2039", order: "OS-809", requester: "José Alencar", sector: "Montagem e Pintura", date: "23/10/2024", status: "Concluído", items: "Óleo Lubrificante Industrial ISO VG 68 · 2 un." },
@@ -15,6 +16,7 @@ export const navItems = [
   { label: "Conversas", href: "/conversas", icon: "messages" },
   { label: "Separação", href: "/separacao", icon: "checkSquare" },
   { label: "Estoque por setor", href: "/estoque-setor", icon: "boxes" },
+  { label: "Carrinho de compras", href: "/compras", icon: "shoppingCart" },
   { label: "Histórico", href: "/historico", icon: "history" },
   { label: "Inventário", href: "/inventario", icon: "inventory" },
   { label: "Análises", href: "/analises", icon: "analytics" },

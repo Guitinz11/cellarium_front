@@ -18,7 +18,7 @@ export default function RequestSearch() {
       const searchValue = normalize(searchedQuery);
       return [request.id, request.order].some((value) => normalize(value) === searchValue);
     })
-    : [];
+    : requests.filter((request) => request.status !== "Concluído");
 
   function searchRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
