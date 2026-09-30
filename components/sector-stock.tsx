@@ -24,19 +24,19 @@ type SectorMessage = {
 
 type SectorStockData = { items: SectorItem[]; messages: SectorMessage[] };
 
-const storageKey = "marcon-sector-stock-v1";
+const storageKey = "marcon-sector-stock-v2";
 const initialData: SectorStockData = {
   items: [
-    { code: "MAT-00482", name: "Rolamento 6204", sector: "Montagem e Pintura", quantity: 30, minimum: 8, unit: "un." },
-    { code: "MAT-00136", name: "Filtro hidráulico HF-12", sector: "Montagem e Pintura", quantity: 4, minimum: 6, unit: "un." },
-    { code: "MAT-00301", name: "Disco de corte 7″", sector: "Usinagem e Solda", quantity: 12, minimum: 5, unit: "un." },
-    { code: "MAT-00620", name: "Fita isolante 20 m", sector: "Usinagem e Solda", quantity: 18, minimum: 10, unit: "un." },
+    { code: "CS-001", name: "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm", sector: "Montagem e Pintura", quantity: 30, minimum: 8, unit: "Rolo" },
+    { code: "EP-008", name: "Luva de Raspa Cano Longo", sector: "Montagem e Pintura", quantity: 4, minimum: 6, unit: "Par" },
+    { code: "AB-001", name: "Disco de Corte para Aço Carbono 4.1/2\" x 1.0mm", sector: "Usinagem e Solda", quantity: 12, minimum: 5, unit: "Unidade" },
+    { code: "UT-005", name: "Fita Veda Rosca PTFE", sector: "Usinagem e Solda", quantity: 18, minimum: 10, unit: "Rolo" },
   ],
   messages: [
     {
       id: "notice-initial",
-      code: "MAT-00482",
-      itemName: "Rolamento 6204",
+      code: "CS-001",
+      itemName: "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm",
       sector: "Montagem e Pintura",
       text: "O material já está disponível no estoque do seu setor.",
       createdAt: new Date("2026-09-25T11:30:00.000Z").getTime(),

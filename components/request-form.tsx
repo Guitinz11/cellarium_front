@@ -1,0 +1,64 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
+import { materialsCatalog, sectors } from "@/lib/mock-data";
+import { getAllRequests, saveSubmittedRequest, type RequestRecord } from "@/lib/request-storage";
+import { getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
+
+export default function RequestForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedCodes = searchParams.getAll("material");
+  const quantities = searchParams.getAll("qty");
+  const selectedItems = selectedCodes.flatMap((code, index) => {
+    const item = materialsCatalog.find((product) => product.code === code);
+    return item ? [{ item, quantity: Number(quantities[index]) || 1 }] : [];
+  });
+  const [requester, setRequester] = useState("");
+  const [order, setOrder] = useState("");
+  const sector = useSyncExternalStore(subscribeToRequesterSession, getRequesterSector, getServerRequesterValue);
+  const [shift, setShift] = useState("");
+  const [neededDate, setNeededDate] = useState("");
+  const [notes, setNotes] = useState("");
+
+  function submitRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const matchingIds = getAllRequests().map((request) => Number(request.id.replace("REQ-", ""))).filter(Number.isFinite);
+    const nextId = Math.max(2048, ...matchingIds) + 1;
+    const request: RequestRecord = {
+      id: `REQ-${nextId}`,
+      order: order.trim(),
+      requester: requester.trim(),
+      sector,
+      shift,
+      employeeCode: window.localStorage.getItem("cellarium-requester-code") ?? undefined,
+      notes: notes.trim() || undefined,
+      date: new Intl.DateTimeFormat("pt-BR").format(new Date(`${neededDate}T12:00:00`)),
+      status: "Pendente",
+      items: selectedItems.map(({ item, quantity }) => `${item.name} · ${quantity} ${item.unit}`).join("; "),
+    };
+    saveSubmittedRequest(request);
+    router.push("/chat?request=" + encodeURIComponent(request.id));
+  }
+
+  return <>
+    <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="mb-2 text-[11px] font-semibold uppercase tracking-[.13em] text-[#0B57D0]">Requisitante · Materiais</p><h1 className="text-[27px] font-semibold text-slate-900 sm:text-[30px]">Nova requisição</h1><p className="mt-2 text-sm leading-6 text-slate-500">Preencha os dados para solicitar materiais ao almoxarifado.</p></div><Link href="/materiais" className="text-xs font-semibold text-[#0B57D0] hover:underline">Trocar material</Link></div>
+    <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]"><section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-7"><div className="mb-6 border-b border-slate-100 pb-4"><h2 className="text-sm font-bold text-slate-900">Dados da solicitação</h2><p className="mt-1 text-xs text-slate-500">Os campos com * são obrigatórios.</p></div>
+      <form onSubmit={submitRequest}>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Nome do solicitante *</span><input required value={requester} onChange={(event) => setRequester(event.target.value)} placeholder="Ex.: José Alencar" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Ordem de serviço *</span><input required value={order} onChange={(event) => setOrder(event.target.value)} placeholder="Ex.: OS-821" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Setor *</span><select required value={sector} disabled className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:opacity-80"><option value="">Selecione seu setor no acesso</option>{sectors.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Turno *</span><select required value={shift} onChange={(event) => setShift(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700"><option value="">Selecione o turno</option><option>1º turno</option><option>2º turno</option><option>3º turno</option></select></label>
+          <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Data necessária *</span><input required type="date" value={neededDate} onChange={(event) => setNeededDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+        </div>
+        <div className="mt-6"><div className="mb-3 flex items-center justify-between"><h3 className="text-xs font-bold text-slate-800">Material solicitado</h3><Link href="/materiais" className="text-xs font-semibold text-[#0B57D0] hover:underline">Escolher outro</Link></div><div className="space-y-2">{selectedItems.length ? selectedItems.map(({ item, quantity }) => <div key={item.code} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3"><div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{item.code}</p></div><p className="text-right text-xs font-semibold text-slate-700">Qtd.: {quantity}</p></div>) : <div className="rounded-lg border border-dashed border-slate-300 p-4 text-xs text-slate-500">Nenhum material selecionado. <Link href="/materiais" className="font-semibold text-[#0B57D0]">Escolher materiais</Link></div>}</div></div>
+        <label className="mt-5 block"><span className="mb-2 block text-xs font-semibold text-slate-700">Observações</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Descreva a aplicação ou informações adicionais..." className="w-full resize-y rounded-lg border border-slate-200 p-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>
+        <div className="mt-6 flex flex-col-reverse justify-end gap-3 border-t border-slate-100 pt-5 sm:flex-row"><Link href="/materiais" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">Voltar à seleção</Link><button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#0B57D0] px-4 text-sm font-semibold text-white hover:bg-blue-800">Enviar requisição <ArrowRight size={16}/></button></div>
+      </form>
+    </section><section className="h-fit rounded-lg border border-slate-200 bg-white p-5"><div className="flex items-start gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-[#0B57D0]"><ShieldCheck size={18}/></div><div><h3 className="text-sm font-bold text-slate-900">Antes de solicitar</h3><p className="mt-1 text-xs leading-5 text-slate-500">Confira as informações para agilizar a separação dos materiais.</p></div></div><ul className="mt-5 space-y-4 text-xs text-slate-600"><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Tenha a ordem de serviço em mãos.</li><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Informe a quantidade necessária para o serviço.</li><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Acompanhe o andamento pela tela de acompanhamento.</li></ul></section></div>
+  </>;
+}

@@ -1,18 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
+import { sectors } from "@/lib/mock-data";
 
 type Profile = "funcionario" | "almoxarife";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile>("funcionario");
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
+  const [sector, setSector] = useState("");
   const [password, setPassword] = useState("");
+
+  function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (profile === "funcionario") {
+      window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
+      window.localStorage.setItem("cellarium-requester-sector", sector);
+      window.dispatchEvent(new Event("cellarium-requester-profile-updated"));
+      router.push("/materiais");
+      return;
+    }
+    router.push("/painel");
+  }
 
   return (
     <main className="login-shell grid min-h-[100svh] lg:grid-cols-[1.06fr_.94fr]">
@@ -48,11 +64,12 @@ export default function LoginPage() {
             {(["funcionario", "almoxarife"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={profile === item} onClick={() => setProfile(item)} className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition duration-200 ${profile === item ? "bg-white text-[#0b57d0] shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{item === "funcionario" ? "Funcionário" : "Almoxarife"}</button>)}
           </div>
 
-          <div className="space-y-3 sm:space-y-5">
+          <form onSubmit={handleLogin} className="space-y-3 sm:space-y-5">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">E-mail ou código de acesso</span>
-              <span className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 sm:h-[50px]"><Mail size={18} className="shrink-0 text-slate-400" /><input autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@marcon.com.br" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" /></span>
+              <span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">{profile === "funcionario" ? "Código do funcionário" : "Código de acesso"}</span>
+              <span className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 sm:h-[50px]"><UserRound size={18} className="shrink-0 text-slate-400" /><input required autoComplete="username" value={employeeCode} onChange={(event) => setEmployeeCode(event.target.value)} placeholder={profile === "funcionario" ? "Ex.: 123456" : "Informe seu código de acesso"} className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" /></span>
             </label>
+            {profile === "funcionario" && <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">Seu setor</span><select required value={sector} onChange={(event) => setSector(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 sm:h-[50px]"><option value="">Selecione seu setor</option>{sectors.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">Senha</span>
               <span className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 sm:h-[50px]"><LockKeyhole size={18} className="shrink-0 text-slate-400" /><input autoComplete="current-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} className="rounded-md p-1 text-slate-400 transition hover:text-slate-700">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span>
@@ -61,8 +78,8 @@ export default function LoginPage() {
               <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-600"><input type="checkbox" className="h-4 w-4 rounded accent-[#0b57d0]" />Manter conectado</label>
               <a href="mailto:ti@marcon.com.br?subject=Recuperar%20acesso" className="rounded text-sm font-semibold text-[#0b57d0] transition hover:text-blue-800">Esqueceu a senha?</a>
             </div>
-            <Link href={profile === "funcionario" ? "/materiais" : "/painel"} className="group mt-2 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#0b57d0] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(11,87,208,.2)] transition duration-200 hover:scale-[1.01] hover:bg-blue-800 hover:shadow-[0_14px_30px_rgba(11,87,208,.27)] active:scale-[.99]">Entrar no portal <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></Link>
-          </div>
+            <button type="submit" className="group mt-2 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#0b57d0] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(11,87,208,.2)] transition duration-200 hover:scale-[1.01] hover:bg-blue-800 hover:shadow-[0_14px_30px_rgba(11,87,208,.27)] active:scale-[.99]">Entrar no portal <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></button>
+          </form>
 
           <div className="mt-5 border-t border-slate-200 pt-3 text-center sm:mt-8 sm:pt-6">
             <p className="hidden text-xs leading-5 text-slate-500 sm:block">Precisa de ajuda para acessar?</p>

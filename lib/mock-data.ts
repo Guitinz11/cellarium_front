@@ -1,24 +1,68 @@
 export const requests = [
-  { id: "REQ-2048", order: "OS-821", requester: "José Alencar", sector: "Montagem e Pintura", date: "24/10/2024", status: "Pendente", items: "Rolamento 6204 · 4 un." },
-  { id: "REQ-2045", order: "OS-819", requester: "Marcos Souza", sector: "Usinagem e Solda", date: "24/10/2024", status: "Em andamento", items: "Disco de corte · 12 un." },
-  { id: "REQ-2041", order: "OS-812", requester: "Felipe Neto", sector: "Qualidade e Testes", date: "23/10/2024", status: "Concluído", items: "Fusível 10A · 6 un." },
-  { id: "REQ-2039", order: "OS-809", requester: "José Alencar", sector: "Montagem e Pintura", date: "23/10/2024", status: "Concluído", items: "Óleo hidráulico · 2 un." },
+  { id: "REQ-2048", order: "OS-821", requester: "José Alencar", sector: "Montagem e Pintura", date: "24/10/2024", status: "Pendente", items: "Bico de Contato MIG M6 x 28 x 1.2mm · 4 un." },
+  { id: "REQ-2045", order: "OS-819", requester: "Marcos Souza", sector: "Usinagem e Solda", date: "24/10/2024", status: "Em andamento", items: "Disco de Corte para Aço Carbono 4.1/2\" x 1.0mm · 12 un." },
+  { id: "REQ-2041", order: "OS-812", requester: "Felipe Neto", sector: "Qualidade e Testes", date: "23/10/2024", status: "Concluído", items: "Luva de Raspa Cano Longo · 6 un." },
+  { id: "REQ-2039", order: "OS-809", requester: "José Alencar", sector: "Montagem e Pintura", date: "23/10/2024", status: "Concluído", items: "Óleo Lubrificante Industrial ISO VG 68 · 2 un." },
 ];
 
-export const stock = [
-  { name: "Rolamento 6204", code: "MAT-00482", quantity: 3, minimum: 10, unit: "un." },
-  { name: "Filtro hidráulico HF-12", code: "MAT-00136", quantity: 5, minimum: 8, unit: "un." },
-  { name: "Disco de corte 7″", code: "MAT-00301", quantity: 8, minimum: 12, unit: "un." },
-];
+
 
 export const sectors = ["Montagem e Pintura", "Usinagem e Solda", "Corte e Dobra e Estamparia", "Assistência Técnica", "Projetos e Engenharia", "Setor Comercial", "Qualidade e Testes"];
 
 export const navItems = [
   { label: "Painel Geral", href: "/painel", icon: "layout" },
   { label: "Requisições", href: "/fila", icon: "requests" },
+  { label: "Conversas", href: "/conversas", icon: "messages" },
   { label: "Separação", href: "/separacao", icon: "checkSquare" },
   { label: "Estoque por setor", href: "/estoque-setor", icon: "boxes" },
   { label: "Histórico", href: "/historico", icon: "history" },
   { label: "Inventário", href: "/inventario", icon: "inventory" },
   { label: "Análises", href: "/analises", icon: "analytics" },
 ];
+
+export const seededMaterials = [
+  {"name": "Chapa de Aço Carbono SAE 1020 - 1/8\" (3.17mm)", "code": "MP-001", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Espessura 1/8\" (3,17mm) — uso em estruturas e componentes metálicos gerais"},
+  {"name": "Chapa de Aço Carbono SAE 1020 - 1/4\" (6.35mm)", "code": "MP-002", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Espessura 1/4\" (6,35mm) — uso em estruturas e componentes metálicos gerais"},
+  {"name": "Chapa de Aço Inox AISI 304 - Escovada 1.5mm", "code": "MP-003", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Inox AISI 304, acabamento escovado, espessura 1,5mm"},
+  {"name": "Chapa de Alumínio Naval 5052 H32 - 2.0mm", "code": "MP-004", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Liga 5052 H32, espessura 2,0mm, aplicação naval/estrutural"},
+  {"name": "Viga U de Aço Carbono - 3\"", "code": "MP-005", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Perfil U 3\", aço carbono"},
+  {"name": "Perfil Tubular Quadrado Aço Carbono 40x40x2.0mm", "code": "MP-007", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Seção 40x40mm, parede 2,0mm"},
+  {"name": "Barra Redonda de Aço SAE 1045 - Diâmetro 1\"", "code": "MP-012", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Diâmetro 1\", aço SAE 1045"},
+  {"name": "Barra Redonda de Aço SAE 4140 - Diâmetro 2\"", "code": "MP-013", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Diâmetro 2\", aço SAE 4140"},
+  {"name": "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm", "code": "CS-001", "quantity": 50, "minimum": 10, "unit": "Rolo", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 1,2mm, processo MIG/MAG"},
+  {"name": "Eletrodo Revestido AWS E6013 - 2.50mm", "code": "CS-004", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 2,50mm, uso geral"},
+  {"name": "Eletrodo Revestido AWS E7018 - 3.25mm", "code": "CS-005", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 3,25mm, alta resistência mecânica"},
+  {"name": "Bico de Contato MIG M6 x 28 x 1.2mm", "code": "CS-012", "quantity": 0, "minimum": 10, "unit": "Unidade", "category": "Consumíveis de solda e corte térmico", "specification": "Rosca M6, comprimento 28mm, para arame 1,2mm"},
+  {"name": "Antirrespingo de Solda em Spray", "code": "CS-017", "quantity": 50, "minimum": 10, "unit": "Lata", "category": "Consumíveis de solda e corte térmico", "specification": "Uso em processos de solda MIG/MAG"},
+  {"name": "Disco de Corte para Aço Carbono 4.1/2\" x 1.0mm", "code": "AB-001", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Diâmetro 4.1/2\", espessura 1,0mm"},
+  {"name": "Disco Flap Grão 40 - Zircônio 4.1/2\"", "code": "AB-004", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Grão 40, zircônio, diâmetro 4.1/2\""},
+  {"name": "Broca helicoidal HSS DIN 338 - 3.0mm", "code": "AB-010", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Diâmetro 3,0mm, aço rápido HSS"},
+  {"name": "Inserto de Metal Duro WNMG 080408", "code": "AB-014", "quantity": 3, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Geometria WNMG 080408, uso em torneamento"},
+  {"name": "Fresa Metal Duro Topo Reto 4 Facas - Ø 10mm", "code": "AB-019", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "4 facas, diâmetro 10mm"},
+  {"name": "Parafuso Sextavado RI Grau 5 - 1/4\" x 1\" UNC", "code": "FX-001", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Rosca inteira, grau 5, 1/4\" x 1\" UNC"},
+  {"name": "Parafuso Sextavado RP Classe 8.8 - M10 x 50mm", "code": "FX-002", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Rosca parcial, classe 8.8, M10 x 50mm"},
+  {"name": "Parafuso Allen Cabeça Cilíndrica M6 x 20mm", "code": "FX-004", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Sextavado interno, M6 x 20mm"},
+  {"name": "Porca Sextavada Leve Zincada 1/4\" UNC", "code": "FX-008", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Zincada, rosca 1/4\" UNC"},
+  {"name": "Arruela Lisa Zincada DIN 125 - M8", "code": "FX-012", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "DIN 125, M8, zincada"},
+  {"name": "Rebite de Repuxo Alumínio/Aço 4.0 x 12mm", "code": "FX-017", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Diâmetro 4,0mm, comprimento 12mm"},
+  {"name": "Óleo Solúvel Semi-Sintético para Usinagem", "code": "QM-001", "quantity": 50, "minimum": 10, "unit": "Galão", "category": "Químicos, lubrificantes e MRO", "specification": "Uso em processos de usinagem"},
+  {"name": "Graxa de Lítio NLGI 2", "code": "QM-003", "quantity": 50, "minimum": 10, "unit": "Bisnaga", "category": "Químicos, lubrificantes e MRO", "specification": "Consistência NLGI 2, lubrificação geral"},
+  {"name": "Óleo Lubrificante Industrial ISO VG 68", "code": "QM-004", "quantity": 50, "minimum": 10, "unit": "Galão", "category": "Químicos, lubrificantes e MRO", "specification": "Viscosidade ISO VG 68"},
+  {"name": "Desengraxante Industrial Alcalino", "code": "QM-007", "quantity": 50, "minimum": 10, "unit": "Bombona", "category": "Químicos, lubrificantes e MRO", "specification": "Limpeza de peças e superfícies metálicas"},
+  {"name": "Trava Química de Alta Torque", "code": "QM-013", "quantity": 50, "minimum": 10, "unit": "Frasco", "category": "Químicos, lubrificantes e MRO", "specification": "Fixação roscada de alta resistência"},
+  {"name": "Desengripante e Lubrificante em Spray", "code": "QM-017", "quantity": 50, "minimum": 10, "unit": "Lata", "category": "Químicos, lubrificantes e MRO", "specification": "Uso geral em manutenção"},
+  {"name": "Máscara de Solda Eletrônica de Escurecimento Automático", "code": "EP-001", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Escurecimento automático, uso em soldagem"},
+  {"name": "Avental de Raspa de Couro", "code": "EP-004", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Proteção térmica para soldagem"},
+  {"name": "Luva de Raspa Cano Longo", "code": "EP-008", "quantity": 50, "minimum": 10, "unit": "Par", "category": "Equipamentos de Proteção Individual", "specification": "Proteção térmica e mecânica"},
+  {"name": "Óculos de Proteção Incolor", "code": "EP-012", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Lente incolor, proteção ocular"},
+  {"name": "Respirador Semifacial PFF2", "code": "EP-016", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Filtro PFF2, proteção respiratória"},
+  {"name": "Botina de Segurança", "code": "EP-018", "quantity": 50, "minimum": 10, "unit": "Par", "category": "Equipamentos de Proteção Individual", "specification": "Uso industrial, com biqueira de proteção"},
+  {"name": "Estopa Branca para Limpeza Mecânica", "code": "UT-001", "quantity": 50, "minimum": 10, "unit": "Kg", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Limpeza geral de máquinas e equipamentos"},
+  {"name": "Fita Veda Rosca PTFE", "code": "UT-005", "quantity": 50, "minimum": 10, "unit": "Rolo", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Vedação de roscas hidráulicas/pneumáticas"},
+  {"name": "Abraçadeira de Nylon", "code": "UT-009", "quantity": 50, "minimum": 10, "unit": "Pacote", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Fixação de cabos e mangueiras"},
+  {"name": "Engate Rápido Pneumático Macho", "code": "UT-011", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Conexão pneumática rápida"},
+  {"name": "Trena Métrica Manual com Trava - 5 Metros", "code": "UT-018", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Medição manual, trava automática, 5 metros"},
+];
+
+export const stock = seededMaterials;
+export const materialsCatalog = seededMaterials;

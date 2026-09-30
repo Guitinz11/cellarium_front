@@ -1,450 +1,1090 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fluxo automatizado do estoque</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --sky-a:#eef0f3; --sky-b:#dde1e6;
-    --truss:#c7cdd6; --truss2:#a7afba;
-    --frame:#2c3036; --roller:#828892; --belt:#383d44; --belt2:#494f57;
-    --box:#eb9b5c; --box-dark:#cf7d43; --tag:#fff6ec; --tag-ink:#4a3a26;
-    --scale-body:#63798a; --scale-top:#84a0ad; --display-bg:#17242e; --display-ink:#83e0a3;
-    --card-bg:#ffffff; --card-ink:#272b31; --card-sub:#7d838d; --accent:#eb9b5c;
-    --gate:#3a4048; --gate-tip:#e2b23a; --danger:#e0574c; --shelf:#96a0ac;
-    --skin:#e3ad86; --sleeve:#4d6fa0;
-    --frame-line:#00000014; --label-bg:rgba(255,255,255,.88);
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --sky-a:#33363b; --sky-b:#2a2d32; --truss:#4c525a; --truss2:#5b6169;
-      --card-bg:#22252a; --card-ink:#f0f1f2; --card-sub:#9aa0a8; --frame-line:#ffffff14;
-      --label-bg:rgba(34,37,42,.85);
-    }
-  }
-  :root[data-theme="dark"]{
-    --sky-a:#33363b; --sky-b:#2a2d32; --truss:#4c525a; --truss2:#5b6169;
-    --card-bg:#22252a; --card-ink:#f0f1f2; --card-sub:#9aa0a8; --frame-line:#ffffff14;
-    --label-bg:rgba(34,37,42,.85);
-  }
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0; min-height:100%; display:flex; align-items:center; justify-content:center;
-    background:var(--sky-a); font-family:"Manrope",-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-  }
-  .scene{
-    position:relative; width:100%; max-width:1100px; aspect-ratio:16/9; overflow:hidden;
-    background:radial-gradient(120% 90% at 50% 0%, var(--sky-a), var(--sky-b));
-    container-type:inline-size;
-    box-shadow:0 1px 0 var(--frame-line) inset;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Fluxo automatizado do estoque</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --sky-a: #eef0f3;
+        --sky-b: #dde1e6;
+        --truss: #c7cdd6;
+        --truss2: #a7afba;
+        --frame: #2c3036;
+        --roller: #828892;
+        --belt: #383d44;
+        --belt2: #494f57;
+        --box: #eb9b5c;
+        --box-dark: #cf7d43;
+        --tag: #fff6ec;
+        --tag-ink: #4a3a26;
+        --scale-body: #63798a;
+        --scale-top: #84a0ad;
+        --display-bg: #17242e;
+        --display-ink: #83e0a3;
+        --card-bg: #ffffff;
+        --card-ink: #272b31;
+        --card-sub: #7d838d;
+        --accent: #eb9b5c;
+        --gate: #3a4048;
+        --gate-tip: #e2b23a;
+        --danger: #e0574c;
+        --shelf: #96a0ac;
+        --skin: #e3ad86;
+        --sleeve: #4d6fa0;
+        --frame-line: #00000014;
+        --label-bg: rgba(255, 255, 255, 0.88);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --sky-a: #33363b;
+          --sky-b: #2a2d32;
+          --truss: #4c525a;
+          --truss2: #5b6169;
+          --card-bg: #22252a;
+          --card-ink: #f0f1f2;
+          --card-sub: #9aa0a8;
+          --frame-line: #ffffff14;
+          --label-bg: rgba(34, 37, 42, 0.85);
+        }
+      }
+      :root[data-theme="dark"] {
+        --sky-a: #33363b;
+        --sky-b: #2a2d32;
+        --truss: #4c525a;
+        --truss2: #5b6169;
+        --card-bg: #22252a;
+        --card-ink: #f0f1f2;
+        --card-sub: #9aa0a8;
+        --frame-line: #ffffff14;
+        --label-bg: rgba(34, 37, 42, 0.85);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--sky-a);
+        font-family:
+          "Manrope",
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .scene {
+        position: relative;
+        width: 100%;
+        max-width: 1100px;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        background: radial-gradient(
+          120% 90% at 50% 0%,
+          var(--sky-a),
+          var(--sky-b)
+        );
+        container-type: inline-size;
+        box-shadow: 0 1px 0 var(--frame-line) inset;
+      }
 
-  .truss{ position:absolute; top:0; left:0; width:100%; height:15%;
-    background-image:repeating-linear-gradient(45deg, var(--truss) 0 3px, transparent 3px 24px),
-                      repeating-linear-gradient(-45deg, var(--truss) 0 3px, transparent 3px 24px);
-    background-color:var(--truss2); opacity:.9; }
-  .truss::after{ content:""; position:absolute; left:0; bottom:0; width:100%; height:5px; background:var(--truss2); }
-  .arm{ position:absolute; top:15%; width:5px; background:var(--truss2); opacity:.45; }
-  .arm .head{ position:absolute; top:100%; left:50%; transform:translateX(-50%); width:30px; height:18px; border-radius:5px; background:var(--truss2); }
-  .arm1{ left:12%; height:8%; } .arm2{ left:68%; height:11%; }
+      .truss {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 15%;
+        background-image:
+          repeating-linear-gradient(
+            45deg,
+            var(--truss) 0 3px,
+            transparent 3px 24px
+          ),
+          repeating-linear-gradient(
+            -45deg,
+            var(--truss) 0 3px,
+            transparent 3px 24px
+          );
+        background-color: var(--truss2);
+        opacity: 0.9;
+      }
+      .truss::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 5px;
+        background: var(--truss2);
+      }
+      .arm {
+        position: absolute;
+        top: 15%;
+        width: 5px;
+        background: var(--truss2);
+        opacity: 0.45;
+      }
+      .arm .head {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 30px;
+        height: 18px;
+        border-radius: 5px;
+        background: var(--truss2);
+      }
+      .arm1 {
+        left: 12%;
+        height: 8%;
+      }
+      .arm2 {
+        left: 68%;
+        height: 11%;
+      }
 
-  .conveyor{ position:absolute; left:0; bottom:16%; width:100%; height:7%; }
-  .belt{ position:absolute; inset:0 0 40% 0; background:var(--belt); border-radius:3px;
-    background-image:repeating-linear-gradient(100deg, var(--belt2) 0 10px, transparent 10px 26px);
-    background-size:36px 100%; animation:tread 1s linear infinite; }
-  .rollers{ position:absolute; left:0; right:0; bottom:0; height:60%;
-    background-image:radial-gradient(circle at 50% 50%, var(--roller) 42%, transparent 44%);
-    background-size:36px 100%; background-repeat:repeat-x; animation:tread .6s linear infinite; }
-  @keyframes tread{ from{background-position-x:0;} to{background-position-x:36px;} }
-  .scene.paused .belt, .scene.paused .rollers{ animation-play-state:paused; }
-  .legs{ position:absolute; bottom:-13%; left:0; width:100%; height:13%;
-    background-image:repeating-linear-gradient(90deg, var(--frame) 0 4px, transparent 4px 90px); opacity:.8; }
-  .conveyor-shadow{ position:absolute; left:2%; right:2%; bottom:-3%; height:6%; border-radius:50%;
-    background:radial-gradient(closest-side, rgba(0,0,0,.14), transparent 70%); filter:blur(2px); }
+      .conveyor {
+        position: absolute;
+        left: 0;
+        bottom: 16%;
+        width: 100%;
+        height: 7%;
+      }
+      .belt {
+        position: absolute;
+        inset: 0 0 40% 0;
+        background: var(--belt);
+        border-radius: 3px;
+        background-image: repeating-linear-gradient(
+          100deg,
+          var(--belt2) 0 10px,
+          transparent 10px 26px
+        );
+        background-size: 36px 100%;
+        animation: tread 1s linear infinite;
+      }
+      .rollers {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 60%;
+        background-image: radial-gradient(
+          circle at 50% 50%,
+          var(--roller) 42%,
+          transparent 44%
+        );
+        background-size: 36px 100%;
+        background-repeat: repeat-x;
+        animation: tread 0.6s linear infinite;
+      }
+      @keyframes tread {
+        from {
+          background-position-x: 0;
+        }
+        to {
+          background-position-x: 36px;
+        }
+      }
+      .scene.paused .belt,
+      .scene.paused .rollers {
+        animation-play-state: paused;
+      }
+      .legs {
+        position: absolute;
+        bottom: -13%;
+        left: 0;
+        width: 100%;
+        height: 13%;
+        background-image: repeating-linear-gradient(
+          90deg,
+          var(--frame) 0 4px,
+          transparent 4px 90px
+        );
+        opacity: 0.8;
+      }
+      .conveyor-shadow {
+        position: absolute;
+        left: 2%;
+        right: 2%;
+        bottom: -3%;
+        height: 6%;
+        border-radius: 50%;
+        background: radial-gradient(
+          closest-side,
+          rgba(0, 0, 0, 0.14),
+          transparent 70%
+        );
+        filter: blur(2px);
+      }
 
-  /* mão do funcionário empurrando a caixa */
-  .hand{ position:absolute; left:-18%; bottom:calc(16% + 6.6%); width:6%; height:5.6%; z-index:2;
-    transition:left .3s ease; }
-  .hand .fist{ position:absolute; right:0; width:60%; height:100%; background:var(--skin); border-radius:50%; }
-  .hand .sleeve{ position:absolute; left:0; right:38%; top:14%; bottom:14%; background:var(--sleeve); border-radius:6px 0 0 6px; }
-  .hand.push{ left:-6.5%; }
+      /* mão do funcionário empurrando a caixa */
+      .hand {
+        position: absolute;
+        left: -18%;
+        bottom: calc(16% + 6.6%);
+        width: 6%;
+        height: 5.6%;
+        z-index: 2;
+        transition: left 0.3s ease;
+      }
+      .hand .fist {
+        position: absolute;
+        right: 0;
+        width: 60%;
+        height: 100%;
+        background: var(--skin);
+        border-radius: 50%;
+      }
+      .hand .sleeve {
+        position: absolute;
+        left: 0;
+        right: 38%;
+        top: 14%;
+        bottom: 14%;
+        background: var(--sleeve);
+        border-radius: 6px 0 0 6px;
+      }
+      .hand.push {
+        left: -6.5%;
+      }
 
-  /* catraca / cancela */
-  .gate{ position:absolute; left:6.5%; bottom:calc(16% + 7%); width:2.4%; height:12%;
-    display:flex; align-items:flex-end; z-index:3; }
-  .gate .post{ position:absolute; left:0; bottom:0; width:22%; height:100%; background:var(--frame); border-radius:2px; }
-  .gate .arm-bar{ position:absolute; left:22%; bottom:92%; width:520%; height:9%; min-height:6px; border-radius:4px;
-    background:var(--gate); transform-origin:0% 50%; transform:rotate(0deg); transition:transform .35s ease, filter .2s; }
-  .gate .arm-bar::after{ content:""; position:absolute; right:6%; top:0; bottom:0; width:16%; border-radius:4px; background:var(--gate-tip); }
-  .gate.open .arm-bar{ transform:rotate(-82deg); }
-  .gate.reject .arm-bar{ filter:drop-shadow(0 0 6px var(--danger)); animation:shake .3s; }
-  @keyframes shake{ 0%,100%{transform:rotate(0deg);} 30%{transform:rotate(5deg);} 60%{transform:rotate(-5deg);} }
+      /* catraca / cancela */
+      .gate {
+        position: absolute;
+        left: 6.5%;
+        bottom: calc(16% + 7%);
+        width: 2.4%;
+        height: 12%;
+        display: flex;
+        align-items: flex-end;
+        z-index: 3;
+      }
+      .gate .post {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 22%;
+        height: 100%;
+        background: var(--frame);
+        border-radius: 2px;
+      }
+      .gate .arm-bar {
+        position: absolute;
+        left: 22%;
+        bottom: 92%;
+        width: 520%;
+        height: 9%;
+        min-height: 6px;
+        border-radius: 4px;
+        background: var(--gate);
+        transform-origin: 0% 50%;
+        transform: rotate(0deg);
+        transition:
+          transform 0.35s ease,
+          filter 0.2s;
+      }
+      .gate .arm-bar::after {
+        content: "";
+        position: absolute;
+        right: 6%;
+        top: 0;
+        bottom: 0;
+        width: 16%;
+        border-radius: 4px;
+        background: var(--gate-tip);
+      }
+      .gate.open .arm-bar {
+        transform: rotate(-82deg);
+      }
+      .gate.reject .arm-bar {
+        filter: drop-shadow(0 0 6px var(--danger));
+        animation: shake 0.3s;
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        30% {
+          transform: rotate(5deg);
+        }
+        60% {
+          transform: rotate(-5deg);
+        }
+      }
 
-  /* leitor de QR — câmera compacta + moldura de foco */
-  .scanner{ position:absolute; left:27.5%; bottom:calc(16% + 7%); width:4.2%; z-index:3; text-align:center; }
-  .scanner .arm-mount{ position:absolute; left:50%; bottom:100%; width:2px; height:40%; background:var(--truss2); transform:translateX(-50%); }
-  .scanner .cam{ width:100%; aspect-ratio:1/1; background:var(--frame); border-radius:22%; position:relative;
-    box-shadow:0 2px 6px rgba(0,0,0,.2); }
-  .scanner .lens{ position:absolute; left:50%; top:50%; width:52%; height:52%; transform:translate(-50%,-50%);
-    border-radius:50%; background:radial-gradient(circle at 35% 35%, #5b6b78, #263038 70%); }
-  .scanner .lens::after{ content:""; position:absolute; left:28%; top:28%; width:22%; height:22%; border-radius:50%; background:#9fb4c0; opacity:.7; }
-  .scanner.scan .cam{ box-shadow:0 2px 6px rgba(0,0,0,.2), 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent); }
+      /* leitor de QR — câmera compacta + moldura de foco */
+      .scanner {
+        position: absolute;
+        left: 27.5%;
+        bottom: calc(16% + 7%);
+        width: 4.2%;
+        z-index: 3;
+        text-align: center;
+      }
+      .scanner .arm-mount {
+        position: absolute;
+        left: 50%;
+        bottom: 100%;
+        width: 2px;
+        height: 40%;
+        background: var(--truss2);
+        transform: translateX(-50%);
+      }
+      .scanner .cam {
+        width: 100%;
+        aspect-ratio: 1/1;
+        background: var(--frame);
+        border-radius: 22%;
+        position: relative;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+      .scanner .lens {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 52%;
+        height: 52%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #5b6b78, #263038 70%);
+      }
+      .scanner .lens::after {
+        content: "";
+        position: absolute;
+        left: 28%;
+        top: 28%;
+        width: 22%;
+        height: 22%;
+        border-radius: 50%;
+        background: #9fb4c0;
+        opacity: 0.7;
+      }
+      .scanner.scan .cam {
+        box-shadow:
+          0 2px 6px rgba(0, 0, 0, 0.2),
+          0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent);
+      }
 
-  .viewfinder{ position:absolute; left:27.5%; bottom:calc(16% + 5.5%); width:9%; aspect-ratio:1/1; z-index:4;
-    opacity:0; transition:opacity .2s; }
-  .viewfinder.show{ opacity:1; }
-  .viewfinder i{ position:absolute; width:32%; height:32%; border:2.5px solid var(--accent); }
-  .viewfinder i:nth-child(1){ left:0; top:0; border-right:none; border-bottom:none; border-radius:4px 0 0 0; }
-  .viewfinder i:nth-child(2){ right:0; top:0; border-left:none; border-bottom:none; border-radius:0 4px 0 0; }
-  .viewfinder i:nth-child(3){ left:0; bottom:0; border-right:none; border-top:none; border-radius:0 0 0 4px; }
-  .viewfinder i:nth-child(4){ right:0; bottom:0; border-left:none; border-top:none; border-radius:0 0 4px 0; }
+      .viewfinder {
+        position: absolute;
+        left: 27.5%;
+        bottom: calc(16% + 5.5%);
+        width: 9%;
+        aspect-ratio: 1/1;
+        z-index: 4;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .viewfinder.show {
+        opacity: 1;
+      }
+      .viewfinder i {
+        position: absolute;
+        width: 32%;
+        height: 32%;
+        border: 2.5px solid var(--accent);
+      }
+      .viewfinder i:nth-child(1) {
+        left: 0;
+        top: 0;
+        border-right: none;
+        border-bottom: none;
+        border-radius: 4px 0 0 0;
+      }
+      .viewfinder i:nth-child(2) {
+        right: 0;
+        top: 0;
+        border-left: none;
+        border-bottom: none;
+        border-radius: 0 4px 0 0;
+      }
+      .viewfinder i:nth-child(3) {
+        left: 0;
+        bottom: 0;
+        border-right: none;
+        border-top: none;
+        border-radius: 0 0 0 4px;
+      }
+      .viewfinder i:nth-child(4) {
+        right: 0;
+        bottom: 0;
+        border-left: none;
+        border-top: none;
+        border-radius: 0 0 4px 0;
+      }
 
-  .qr-ok{ position:absolute; left:27.5%; bottom:calc(16% + 20%); transform:translate(-50%,4px); color:var(--accent);
-    font-weight:800; font-size:clamp(10px,1.3cqw,14px); opacity:0; transition:opacity .25s, transform .25s; z-index:4;
-    background:var(--card-bg); padding:2px 8px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.12); }
-  .qr-ok.show{ opacity:1; transform:translate(-50%,-4px); }
+      .qr-ok {
+        position: absolute;
+        left: 27.5%;
+        bottom: calc(16% + 20%);
+        transform: translate(-50%, 4px);
+        color: var(--accent);
+        font-weight: 800;
+        font-size: clamp(10px, 1.3cqw, 14px);
+        opacity: 0;
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+        z-index: 4;
+        background: var(--card-bg);
+        padding: 2px 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      }
+      .qr-ok.show {
+        opacity: 1;
+        transform: translate(-50%, -4px);
+      }
 
-  .box{ position:absolute; bottom:calc(16% + 6%); left:-10%; width:7%; aspect-ratio:1/1;
-    background:linear-gradient(155deg, var(--box), var(--box-dark)); border-radius:4px; opacity:0; z-index:2;
-    box-shadow:0 3px 5px rgba(0,0,0,.18);
-    transition:left .9s linear, opacity .3s ease, box-shadow .2s; }
-  .box::before{ content:""; position:absolute; top:16%; left:14%; width:32%; height:32%; background:var(--tag); border-radius:2px;
-    background-image:linear-gradient(var(--tag-ink) 22%, transparent 0 78%, var(--tag-ink) 0),
-                      linear-gradient(90deg, var(--tag-ink) 22%, transparent 0 78%, var(--tag-ink) 0);
-    background-size:100% 34%, 34% 100%; background-repeat:no-repeat; background-position:center; opacity:.8; }
+      .box {
+        position: absolute;
+        bottom: calc(16% + 6%);
+        left: -10%;
+        width: 7%;
+        aspect-ratio: 1/1;
+        background: linear-gradient(155deg, var(--box), var(--box-dark));
+        border-radius: 4px;
+        opacity: 0;
+        z-index: 2;
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.18);
+        transition:
+          left 0.9s linear,
+          opacity 0.3s ease,
+          box-shadow 0.2s;
+      }
+      .box::before {
+        content: "";
+        position: absolute;
+        top: 16%;
+        left: 14%;
+        width: 32%;
+        height: 32%;
+        background: var(--tag);
+        border-radius: 2px;
+        background-image:
+          linear-gradient(
+            var(--tag-ink) 22%,
+            transparent 0 78%,
+            var(--tag-ink) 0
+          ),
+          linear-gradient(
+            90deg,
+            var(--tag-ink) 22%,
+            transparent 0 78%,
+            var(--tag-ink) 0
+          );
+        background-size:
+          100% 34%,
+          34% 100%;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.8;
+      }
 
-  .scale{ position:absolute; right:20%; bottom:16%; width:12%; display:flex; flex-direction:column; align-items:center; z-index:1; }
-  .scale .platform{ width:100%; height:20px; background:linear-gradient(var(--scale-top), color-mix(in srgb, var(--scale-top) 75%, black)); border-radius:5px 5px 0 0; }
-  .scale .base{ width:66%; height:14px; background:var(--scale-body); border-radius:0 0 4px 4px; }
+      .scale {
+        position: absolute;
+        right: 20%;
+        bottom: 16%;
+        width: 12%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 1;
+      }
+      .scale .platform {
+        width: 100%;
+        height: 20px;
+        background: linear-gradient(
+          var(--scale-top),
+          color-mix(in srgb, var(--scale-top) 75%, black)
+        );
+        border-radius: 5px 5px 0 0;
+      }
+      .scale .base {
+        width: 66%;
+        height: 14px;
+        background: var(--scale-body);
+        border-radius: 0 0 4px 4px;
+      }
 
-  .weight-display{ position:absolute; left:74%; bottom:38%; transform:translateX(-50%); z-index:2;
-    background:var(--display-bg); color:var(--display-ink); font-weight:700; font-size:clamp(10px,1.3cqw,15px);
-    padding:5px 10px; border-radius:6px; letter-spacing:.4px; transition:box-shadow .2s; font-variant-numeric:tabular-nums; }
-  .weight-display.flash{ box-shadow:0 0 0 3px var(--accent); }
-  .rod{ position:absolute; left:74%; transform:translateX(-50%); bottom:calc(16% + 34px); width:3px;
-    height:calc(22% - 34px); z-index:1;
-    background:linear-gradient(90deg, color-mix(in srgb, var(--scale-body) 55%, white), var(--scale-body)); }
+      .weight-display {
+        position: absolute;
+        left: 74%;
+        bottom: 38%;
+        transform: translateX(-50%);
+        z-index: 2;
+        background: var(--display-bg);
+        color: var(--display-ink);
+        font-weight: 700;
+        font-size: clamp(10px, 1.3cqw, 15px);
+        padding: 5px 10px;
+        border-radius: 6px;
+        letter-spacing: 0.4px;
+        transition: box-shadow 0.2s;
+        font-variant-numeric: tabular-nums;
+      }
+      .weight-display.flash {
+        box-shadow: 0 0 0 3px var(--accent);
+      }
+      .rod {
+        position: absolute;
+        left: 74%;
+        transform: translateX(-50%);
+        bottom: calc(16% + 34px);
+        width: 3px;
+        height: calc(22% - 34px);
+        z-index: 1;
+        background: linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--scale-body) 55%, white),
+          var(--scale-body)
+        );
+      }
 
-  .shelf{ position:absolute; right:3%; bottom:16%; width:8.5%; height:38%; }
-  .shelf .post{ position:absolute; bottom:0; width:4px; height:100%; background:var(--shelf); border-radius:2px; }
-  .shelf .post.l{ left:0; } .shelf .post.r{ right:0; }
-  .shelf .row{ position:absolute; left:0; width:100%; height:4px; background:var(--shelf); border-radius:2px; }
-  .shelf .row:nth-child(3){ top:0; } .shelf .row:nth-child(4){ top:42%; } .shelf .row:nth-child(5){ top:84%; }
-  .shelf .pkg{ position:absolute; width:34%; height:26%; background:var(--box); border-radius:2px; }
-  .shelf .pkg.a{ left:12%; top:14%; } .shelf .pkg.b{ right:10%; top:56%; }
+      .shelf {
+        position: absolute;
+        right: 3%;
+        bottom: 16%;
+        width: 8.5%;
+        height: 38%;
+      }
+      .shelf .post {
+        position: absolute;
+        bottom: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--shelf);
+        border-radius: 2px;
+      }
+      .shelf .post.l {
+        left: 0;
+      }
+      .shelf .post.r {
+        right: 0;
+      }
+      .shelf .row {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--shelf);
+        border-radius: 2px;
+      }
+      .shelf .row:nth-child(3) {
+        top: 0;
+      }
+      .shelf .row:nth-child(4) {
+        top: 42%;
+      }
+      .shelf .row:nth-child(5) {
+        top: 84%;
+      }
+      .shelf .pkg {
+        position: absolute;
+        width: 34%;
+        height: 26%;
+        background: var(--box);
+        border-radius: 2px;
+      }
+      .shelf .pkg.a {
+        left: 12%;
+        top: 14%;
+      }
+      .shelf .pkg.b {
+        right: 10%;
+        top: 56%;
+      }
 
-  .station-label{ position:absolute; bottom:2%; transform:translateX(-50%); white-space:nowrap;
-    background:var(--label-bg); color:var(--card-ink); font-weight:700; font-size:clamp(8.5px,1.05cqw,11.5px);
-    padding:2px 8px; border-radius:7px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+      .station-label {
+        position: absolute;
+        bottom: 2%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        background: var(--label-bg);
+        color: var(--card-ink);
+        font-weight: 700;
+        font-size: clamp(8.5px, 1.05cqw, 11.5px);
+        padding: 2px 8px;
+        border-radius: 7px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
 
-  .stock-card, .controls{ position:absolute; background:var(--card-bg); color:var(--card-ink);
-    border-radius:12px; padding:10px 16px; box-shadow:0 6px 18px rgba(0,0,0,.14); font-size:clamp(11px,1.4cqw,15px); }
-  .stock-card{ top:5%; right:4%; text-align:right; max-width:44%; }
-  .stock-card .lbl{ color:var(--card-sub); font-size:.82em; margin-bottom:2px; }
-  .stock-card .val{ font-size:1.7em; font-weight:800; transition:transform .25s; }
-  .stock-card .val.pop{ transform:scale(1.16); color:var(--accent); }
+      .stock-card,
+      .controls {
+        position: absolute;
+        background: var(--card-bg);
+        color: var(--card-ink);
+        border-radius: 12px;
+        padding: 10px 16px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+        font-size: clamp(11px, 1.4cqw, 15px);
+      }
+      .stock-card {
+        top: 5%;
+        right: 4%;
+        text-align: right;
+        max-width: 44%;
+      }
+      .stock-card .lbl {
+        color: var(--card-sub);
+        font-size: 0.82em;
+        margin-bottom: 2px;
+      }
+      .stock-card .val {
+        font-size: 1.7em;
+        font-weight: 800;
+        transition: transform 0.25s;
+      }
+      .stock-card .val.pop {
+        transform: scale(1.16);
+        color: var(--accent);
+      }
 
-  .controls{ top:5%; left:4%; display:flex; flex-direction:column; gap:7px; align-items:flex-start; max-width:46%; }
-  .controls .field-label{ font-size:.72em; font-weight:700; color:var(--card-sub); text-transform:uppercase; letter-spacing:.4px; }
-  .controls select{ font:inherit; font-weight:700; color:var(--card-ink); background:var(--card-bg);
-    border:1.5px solid var(--card-sub); border-radius:8px; padding:6px 8px; width:100%; cursor:pointer; }
-  .controls .row{ display:flex; gap:6px; flex-wrap:wrap; }
-  .controls button{ font:inherit; font-weight:700; border:none; border-radius:9px; padding:9px 15px;
-    cursor:pointer; transition:opacity .2s, transform .1s, box-shadow .2s; }
-  .controls .primary{ background:var(--accent); color:#2c2013; box-shadow:0 3px 8px rgba(235,155,92,.35); }
-  .controls .primary:hover{ box-shadow:0 4px 12px rgba(235,155,92,.45); }
-  .controls .ghost{ background:transparent; color:var(--card-ink); box-shadow:inset 0 0 0 1.5px var(--card-sub); }
-  .controls button:active{ transform:scale(.97); }
-  .controls button.busy{ opacity:.5; cursor:not-allowed; box-shadow:none; }
-  .controls .status{ font-size:.8em; color:var(--card-sub); min-height:1.2em; font-weight:600; }
-  .controls .status.warn{ color:var(--danger); }
-</style>
-</head>
-<body>
-  <div class="scene" id="scene">
-    <div class="truss"></div>
-    <div class="arm arm1"><div class="head"></div></div>
-    <div class="arm arm2"><div class="head"></div></div>
+      .controls {
+        top: 5%;
+        left: 4%;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        align-items: flex-start;
+        max-width: 46%;
+      }
+      .controls .field-label {
+        font-size: 0.72em;
+        font-weight: 700;
+        color: var(--card-sub);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .controls select {
+        font: inherit;
+        font-weight: 700;
+        color: var(--card-ink);
+        background: var(--card-bg);
+        border: 1.5px solid var(--card-sub);
+        border-radius: 8px;
+        padding: 6px 8px;
+        width: 100%;
+        cursor: pointer;
+      }
+      .controls .row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .controls button {
+        font: inherit;
+        font-weight: 700;
+        border: none;
+        border-radius: 9px;
+        padding: 9px 15px;
+        cursor: pointer;
+        transition:
+          opacity 0.2s,
+          transform 0.1s,
+          box-shadow 0.2s;
+      }
+      .controls .primary {
+        background: var(--accent);
+        color: #2c2013;
+        box-shadow: 0 3px 8px rgba(235, 155, 92, 0.35);
+      }
+      .controls .primary:hover {
+        box-shadow: 0 4px 12px rgba(235, 155, 92, 0.45);
+      }
+      .controls .ghost {
+        background: transparent;
+        color: var(--card-ink);
+        box-shadow: inset 0 0 0 1.5px var(--card-sub);
+      }
+      .controls button:active {
+        transform: scale(0.97);
+      }
+      .controls button.busy {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .controls .status {
+        font-size: 0.8em;
+        color: var(--card-sub);
+        min-height: 1.2em;
+        font-weight: 600;
+      }
+      .controls .status.warn {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scene" id="scene">
+      <div class="truss"></div>
+      <div class="arm arm1"><div class="head"></div></div>
+      <div class="arm arm2"><div class="head"></div></div>
 
-    <div class="conveyor"><div class="conveyor-shadow"></div><div class="legs"></div><div class="belt"></div><div class="rollers"></div></div>
-
-    <div class="hand" id="hand"><div class="sleeve"></div><div class="fist"></div></div>
-
-    <div class="gate" id="gate"><div class="post"></div><div class="arm-bar"></div></div>
-    <div class="station-label" style="left:7.7%">Catraca</div>
-
-    <div class="scanner" id="scanner"><div class="arm-mount"></div><div class="cam"><div class="lens"></div></div></div>
-    <div class="viewfinder" id="viewfinder"><i></i><i></i><i></i><i></i></div>
-    <div class="qr-ok" id="qrOk">✓ QR lido</div>
-    <div class="station-label" style="left:29.6%">Leitor de QR</div>
-
-    <div class="box" id="box"></div>
-
-    <div class="weight-display" id="display">— g</div>
-    <div class="rod"></div>
-    <div class="scale">
-      <div class="platform"></div>
-      <div class="base"></div>
-    </div>
-    <div class="station-label" style="left:74%">Balança de precisão</div>
-
-    <div class="shelf"><div class="post l"></div><div class="post r"></div><div class="row"></div><div class="row"></div><div class="row"></div><div class="pkg a"></div><div class="pkg b"></div></div>
-    <div class="station-label" style="left:92.75%" id="shelfLabel">Estoque do setor</div>
-
-    <div class="stock-card">
-      <div class="lbl">Estoque do setor · <span id="sectorNameOut">Usinagem e Solda</span></div>
-      <div class="val" id="stockValue">30</div>
-    </div>
-
-    <div class="controls">
-      <div class="field-label">Enviar sobra para o setor</div>
-      <select id="sectorSelect">
-        <option>Montagem e Pintura</option>
-        <option>Usinagem e Solda</option>
-        <option>Corte e Dobra e Estamparia</option>
-        <option>Assistência Técnica</option>
-        <option>Projetos e Engenharia</option>
-        <option>Setor Comercial</option>
-        <option>Qualidade e Testes</option>
-      </select>
-      <div class="row">
-        <button class="primary" id="btn">Colocar caixa na esteira</button>
-        <button class="ghost" id="autoBtn">▶ Demonstração automática</button>
-        <button class="ghost" id="pauseBtn">⏸ Pausar</button>
+      <div class="conveyor">
+        <div class="conveyor-shadow"></div>
+        <div class="legs"></div>
+        <div class="belt"></div>
+        <div class="rollers"></div>
       </div>
-      <div class="status" id="status">Pronto</div>
+
+      <div class="hand" id="hand">
+        <div class="sleeve"></div>
+        <div class="fist"></div>
+      </div>
+
+      <div class="gate" id="gate">
+        <div class="post"></div>
+        <div class="arm-bar"></div>
+      </div>
+      <div class="station-label" style="left: 7.7%">Catraca</div>
+
+      <div class="scanner" id="scanner">
+        <div class="arm-mount"></div>
+        <div class="cam"><div class="lens"></div></div>
+      </div>
+      <div class="viewfinder" id="viewfinder"><i></i><i></i><i></i><i></i></div>
+      <div class="qr-ok" id="qrOk">✓ QR lido</div>
+      <div class="station-label" style="left: 29.6%">Leitor de QR</div>
+
+      <div class="box" id="box"></div>
+
+      <div class="weight-display" id="display">— g</div>
+      <div class="rod"></div>
+      <div class="scale">
+        <div class="platform"></div>
+        <div class="base"></div>
+      </div>
+      <div class="station-label" style="left: 74%">Balança de precisão</div>
+
+      <div class="shelf">
+        <div class="post l"></div>
+        <div class="post r"></div>
+        <div class="row"></div>
+        <div class="row"></div>
+        <div class="row"></div>
+        <div class="pkg a"></div>
+        <div class="pkg b"></div>
+      </div>
+      <div class="station-label" style="left: 92.75%" id="shelfLabel">
+        Estoque do setor
+      </div>
+
+      <div class="stock-card">
+        <div class="lbl">
+          Estoque do setor · <span id="sectorNameOut">Usinagem e Solda</span>
+        </div>
+        <div class="val" id="stockValue">30</div>
+      </div>
+
+      <div class="controls">
+        <div class="field-label">Enviar sobra para o setor</div>
+        <select id="sectorSelect">
+          <option>Montagem e Pintura</option>
+          <option>Usinagem e Solda</option>
+          <option>Corte e Dobra e Estamparia</option>
+          <option>Assistência Técnica</option>
+          <option>Projetos e Engenharia</option>
+          <option>Setor Comercial</option>
+          <option>Qualidade e Testes</option>
+        </select>
+        <div class="row">
+          <button class="primary" id="btn">Colocar caixa na esteira</button>
+          <button class="ghost" id="autoBtn">▶ Demonstração automática</button>
+          <button class="ghost" id="pauseBtn">⏸ Pausar</button>
+        </div>
+        <div class="status" id="status">Pronto</div>
+      </div>
     </div>
-  </div>
 
-<script>
-  const btn = document.getElementById('btn');
-  const autoBtn = document.getElementById('autoBtn');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const statusEl = document.getElementById('status');
-  const scene = document.getElementById('scene');
-  const gate = document.getElementById('gate');
-  const scanner = document.getElementById('scanner');
-  const viewfinder = document.getElementById('viewfinder');
-  const qrOk = document.getElementById('qrOk');
-  const box = document.getElementById('box');
-  const hand = document.getElementById('hand');
-  const display = document.getElementById('display');
-  const stockEl = document.getElementById('stockValue');
-  const sectorSelect = document.getElementById('sectorSelect');
-  const sectorNameOut = document.getElementById('sectorNameOut');
-  const BOX_TRANSITION = 'left .9s linear, opacity .3s ease, box-shadow .2s';
-  const UNIT_G = 20;
-  let busy = false;
-  let autoTimer = null;
-  let paused = false;
-  let wasAutoRunning = false;
-  let currentTarget = null;   // último destino (left) atribuído à caixa no ciclo atual
-  let activeTimers = [];      // timers pausáveis do ciclo atual
+    <script>
+      const btn = document.getElementById("btn");
+      const autoBtn = document.getElementById("autoBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const statusEl = document.getElementById("status");
+      const scene = document.getElementById("scene");
+      const gate = document.getElementById("gate");
+      const scanner = document.getElementById("scanner");
+      const viewfinder = document.getElementById("viewfinder");
+      const qrOk = document.getElementById("qrOk");
+      const box = document.getElementById("box");
+      const hand = document.getElementById("hand");
+      const display = document.getElementById("display");
+      const stockEl = document.getElementById("stockValue");
+      const sectorSelect = document.getElementById("sectorSelect");
+      const sectorNameOut = document.getElementById("sectorNameOut");
+      const BOX_TRANSITION =
+        "left .9s linear, opacity .3s ease, box-shadow .2s";
+      const UNIT_G = 20;
+      let busy = false;
+      let autoTimer = null;
+      let paused = false;
+      let wasAutoRunning = false;
+      let currentTarget = null; // último destino (left) atribuído à caixa no ciclo atual
+      let activeTimers = []; // timers pausáveis do ciclo atual
 
-  // estoque independente por setor (persistente durante a sessão)
-  const stockBySector = {
-    'Montagem e Pintura': 0,
-    'Usinagem e Solda': 30,
-    'Corte e Dobra e Estamparia': 18,
-    'Assistência Técnica': 12,
-    'Projetos e Engenharia': 6,
-    'Setor Comercial': 4,
-    'Qualidade e Testes': 9
-  };
+      // estoque independente por setor (persistente durante a sessão)
+      const stockBySector = {
+        "Montagem e Pintura": 0,
+        "Usinagem e Solda": 30,
+        "Corte e Dobra e Estamparia": 18,
+        "Assistência Técnica": 12,
+        "Projetos e Engenharia": 6,
+        "Setor Comercial": 4,
+        "Qualidade e Testes": 9,
+      };
 
-  function refreshStockDisplay(){
-    sectorNameOut.textContent = sectorSelect.value;
-    stockEl.textContent = stockBySector[sectorSelect.value];
-  }
-  sectorSelect.addEventListener('change', refreshStockDisplay);
-  const requestedSector = new URLSearchParams(window.location.search).get('sector');
-  const requestedItemCode = new URLSearchParams(window.location.search).get('code');
-  if (requestedSector && [...sectorSelect.options].some(option => option.value === requestedSector || option.textContent === requestedSector)) {
-    sectorSelect.value = requestedSector;
-  }
-  refreshStockDisplay();
-
-  function registerSectorReturn(sector, quantity){
-    if (!requestedItemCode) return;
-    const storageKey = 'marcon-sector-stock-v1';
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
-      if (!saved || !Array.isArray(saved.items)) return;
-      const item = saved.items.find(entry => entry.code === requestedItemCode && entry.sector === sector);
-      if (!item) return;
-      item.quantity += quantity;
-      localStorage.setItem(storageKey, JSON.stringify(saved));
-      window.dispatchEvent(new Event('marcon-sector-stock-change'));
-    } catch {
-      setStatus('NÃ£o foi possÃ­vel salvar a devoluÃ§Ã£o', true);
-    }
-  }
-
-  function setStatus(text, warn){
-    statusEl.textContent = text;
-    statusEl.classList.toggle('warn', !!warn);
-  }
-
-  function moveBoxTo(pct){
-    currentTarget = pct;
-    box.style.left = pct;
-  }
-
-  // setTimeout que pode ser pausado e retomado a partir de onde parou
-  function pTimeout(fn, delay){
-    const t = { remaining: delay, id: null, startedAt: null, fired: false };
-    function start(){
-      t.startedAt = Date.now();
-      t.id = setTimeout(() => { t.fired = true; fn(); }, t.remaining);
-    }
-    t.pause = () => { if (t.fired) return; clearTimeout(t.id); t.remaining -= (Date.now() - t.startedAt); if (t.remaining < 0) t.remaining = 0; };
-    t.resume = () => { if (t.fired) return; start(); };
-    start();
-    activeTimers.push(t);
-    return t;
-  }
-
-  function animateWeightTo(target, duration){
-    const start = performance.now();
-    function step(now){
-      const p = Math.min(1, (now - start) / duration);
-      display.textContent = Math.round(p * target) + ' g';
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  btn.addEventListener('click', () => {
-    if (paused) return;
-    if (busy){
-      gate.classList.add('reject');
-      setStatus('Aguarde: uma caixa por vez', true);
-      setTimeout(()=>gate.classList.remove('reject'), 350);
-      setTimeout(()=>setStatus('Processando…'), 800);
-      return;
-    }
-    runCycle();
-  });
-
-  autoBtn.addEventListener('click', () => {
-    if (paused) return;
-    if (autoTimer){
-      clearInterval(autoTimer);
-      autoTimer = null;
-      autoBtn.textContent = '▶ Demonstração automática';
-      setStatus('Pronto');
-      return;
-    }
-    autoBtn.textContent = '⏸ Parar demonstração';
-    if (!busy) runCycle();
-    autoTimer = setInterval(()=>{ if (!busy) runCycle(); }, 6600);
-  });
-
-  pauseBtn.addEventListener('click', () => {
-    if (!paused){
-      // pausar: congela a esteira e a caixa exatamente onde estão
-      paused = true;
-      scene.classList.add('paused');
-      if (currentTarget !== null){
-        const frozenLeft = getComputedStyle(box).left; // posição atual em px
-        box.style.transition = 'none';
-        box.style.left = frozenLeft;
-        void box.offsetWidth;
+      function refreshStockDisplay() {
+        sectorNameOut.textContent = sectorSelect.value;
+        stockEl.textContent = stockBySector[sectorSelect.value];
       }
-      activeTimers.forEach(t => t.pause());
-      if (autoTimer){ clearInterval(autoTimer); autoTimer = null; wasAutoRunning = true; } else { wasAutoRunning = false; }
-      pauseBtn.textContent = '▶ Retomar';
-      setStatus('Pausado');
-    } else {
-      // retomar: continua o trajeto de onde parou
-      paused = false;
-      scene.classList.remove('paused');
-      if (currentTarget !== null){
+      sectorSelect.addEventListener("change", refreshStockDisplay);
+      const requestedSector = new URLSearchParams(window.location.search).get(
+        "sector",
+      );
+      const requestedItemCode = new URLSearchParams(window.location.search).get(
+        "code",
+      );
+      if (
+        requestedSector &&
+        [...sectorSelect.options].some(
+          (option) =>
+            option.value === requestedSector ||
+            option.textContent === requestedSector,
+        )
+      ) {
+        sectorSelect.value = requestedSector;
+      }
+      refreshStockDisplay();
+
+      function registerSectorReturn(sector, quantity) {
+        if (!requestedItemCode) return;
+        const storageKey = "marcon-sector-stock-v1";
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+          if (!saved || !Array.isArray(saved.items)) return;
+          const item = saved.items.find(
+            (entry) =>
+              entry.code === requestedItemCode && entry.sector === sector,
+          );
+          if (!item) return;
+          item.quantity += quantity;
+          localStorage.setItem(storageKey, JSON.stringify(saved));
+          window.dispatchEvent(new Event("marcon-sector-stock-change"));
+        } catch {
+          setStatus("NÃ£o foi possÃ­vel salvar a devoluÃ§Ã£o", true);
+        }
+      }
+
+      function setStatus(text, warn) {
+        statusEl.textContent = text;
+        statusEl.classList.toggle("warn", !!warn);
+      }
+
+      function moveBoxTo(pct) {
+        currentTarget = pct;
+        box.style.left = pct;
+      }
+
+      // setTimeout que pode ser pausado e retomado a partir de onde parou
+      function pTimeout(fn, delay) {
+        const t = { remaining: delay, id: null, startedAt: null, fired: false };
+        function start() {
+          t.startedAt = Date.now();
+          t.id = setTimeout(() => {
+            t.fired = true;
+            fn();
+          }, t.remaining);
+        }
+        t.pause = () => {
+          if (t.fired) return;
+          clearTimeout(t.id);
+          t.remaining -= Date.now() - t.startedAt;
+          if (t.remaining < 0) t.remaining = 0;
+        };
+        t.resume = () => {
+          if (t.fired) return;
+          start();
+        };
+        start();
+        activeTimers.push(t);
+        return t;
+      }
+
+      function animateWeightTo(target, duration) {
+        const start = performance.now();
+        function step(now) {
+          const p = Math.min(1, (now - start) / duration);
+          display.textContent = Math.round(p * target) + " g";
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      btn.addEventListener("click", () => {
+        if (paused) return;
+        if (busy) {
+          gate.classList.add("reject");
+          setStatus("Aguarde: uma caixa por vez", true);
+          setTimeout(() => gate.classList.remove("reject"), 350);
+          setTimeout(() => setStatus("Processando…"), 800);
+          return;
+        }
+        runCycle();
+      });
+
+      autoBtn.addEventListener("click", () => {
+        if (paused) return;
+        if (autoTimer) {
+          clearInterval(autoTimer);
+          autoTimer = null;
+          autoBtn.textContent = "▶ Demonstração automática";
+          setStatus("Pronto");
+          return;
+        }
+        autoBtn.textContent = "⏸ Parar demonstração";
+        if (!busy) runCycle();
+        autoTimer = setInterval(() => {
+          if (!busy) runCycle();
+        }, 6600);
+      });
+
+      pauseBtn.addEventListener("click", () => {
+        if (!paused) {
+          // pausar: congela a esteira e a caixa exatamente onde estão
+          paused = true;
+          scene.classList.add("paused");
+          if (currentTarget !== null) {
+            const frozenLeft = getComputedStyle(box).left; // posição atual em px
+            box.style.transition = "none";
+            box.style.left = frozenLeft;
+            void box.offsetWidth;
+          }
+          activeTimers.forEach((t) => t.pause());
+          if (autoTimer) {
+            clearInterval(autoTimer);
+            autoTimer = null;
+            wasAutoRunning = true;
+          } else {
+            wasAutoRunning = false;
+          }
+          pauseBtn.textContent = "▶ Retomar";
+          setStatus("Pausado");
+        } else {
+          // retomar: continua o trajeto de onde parou
+          paused = false;
+          scene.classList.remove("paused");
+          if (currentTarget !== null) {
+            box.style.transition = BOX_TRANSITION;
+            void box.offsetWidth;
+            box.style.left = currentTarget;
+          }
+          activeTimers.forEach((t) => t.resume());
+          if (wasAutoRunning) {
+            autoBtn.textContent = "⏸ Parar demonstração";
+            autoTimer = setInterval(() => {
+              if (!busy) runCycle();
+            }, 6600);
+          }
+          pauseBtn.textContent = "⏸ Pausar";
+          setStatus(
+            busy
+              ? "Processando…"
+              : autoTimer
+                ? "Demonstração automática"
+                : "Pronto",
+          );
+        }
+      });
+
+      function runCycle() {
+        busy = true;
+        btn.classList.add("busy");
+        setStatus("Processando…");
+        activeTimers = [];
+
+        box.style.transition = "none";
+        moveBoxTo("-10%");
+        box.style.opacity = "1";
+        void box.offsetWidth; // reflow
         box.style.transition = BOX_TRANSITION;
-        void box.offsetWidth;
-        box.style.left = currentTarget;
+
+        // 0) funcionário empurra a caixa
+        hand.classList.add("push");
+        pTimeout(() => hand.classList.remove("push"), 380);
+
+        // 1) até a catraca
+        pTimeout(() => gate.classList.add("open"), 350);
+        pTimeout(() => moveBoxTo("5%"), 20);
+        pTimeout(() => gate.classList.remove("open"), 1000);
+
+        // 2) até o leitor de QR
+        pTimeout(() => moveBoxTo("27.5%"), 950);
+        pTimeout(() => {
+          scanner.classList.add("scan");
+          viewfinder.classList.add("show");
+          qrOk.classList.add("show");
+        }, 1950);
+        pTimeout(() => {
+          scanner.classList.remove("scan");
+          viewfinder.classList.remove("show");
+          qrOk.classList.remove("show");
+        }, 2450);
+
+        // 3) até a balança (para exatamente embaixo do visor de peso)
+        pTimeout(() => moveBoxTo("70.5%"), 2500);
+        pTimeout(() => {
+          const weight = Math.round(380 + Math.random() * 40);
+          const qty = Math.round(weight / UNIT_G);
+          display.classList.add("flash");
+          animateWeightTo(weight, 450);
+          pTimeout(() => display.classList.remove("flash"), 550);
+          pTimeout(() => {
+            const sector = sectorSelect.value;
+            stockBySector[sector] += qty;
+            stockEl.textContent = stockBySector[sector];
+            registerSectorReturn(sector, qty);
+            stockEl.classList.add("pop");
+            pTimeout(() => stockEl.classList.remove("pop"), 300);
+          }, 500);
+        }, 3600);
+
+        // 4) segue para o estoque
+        pTimeout(() => moveBoxTo("93%"), 4700);
+        pTimeout(() => (box.style.opacity = "0"), 5700);
+
+        // 5) libera para a próxima caixa
+        pTimeout(() => {
+          busy = false;
+          currentTarget = null;
+          btn.classList.remove("busy");
+          setStatus(autoTimer ? "Demonstração automática" : "Pronto");
+        }, 6000);
       }
-      activeTimers.forEach(t => t.resume());
-      if (wasAutoRunning){
-        autoBtn.textContent = '⏸ Parar demonstração';
-        autoTimer = setInterval(()=>{ if (!busy) runCycle(); }, 6600);
-      }
-      pauseBtn.textContent = '⏸ Pausar';
-      setStatus(busy ? 'Processando…' : (autoTimer ? 'Demonstração automática' : 'Pronto'));
-    }
-  });
-
-  function runCycle(){
-    busy = true;
-    btn.classList.add('busy');
-    setStatus('Processando…');
-    activeTimers = [];
-
-    box.style.transition = 'none';
-    moveBoxTo('-10%');
-    box.style.opacity = '1';
-    void box.offsetWidth; // reflow
-    box.style.transition = BOX_TRANSITION;
-
-    // 0) funcionário empurra a caixa
-    hand.classList.add('push');
-    pTimeout(()=> hand.classList.remove('push'), 380);
-
-    // 1) até a catraca
-    pTimeout(()=> gate.classList.add('open'), 350);
-    pTimeout(()=> moveBoxTo('5%'), 20);
-    pTimeout(()=> gate.classList.remove('open'), 1000);
-
-    // 2) até o leitor de QR
-    pTimeout(()=> moveBoxTo('27.5%'), 950);
-    pTimeout(()=>{
-      scanner.classList.add('scan');
-      viewfinder.classList.add('show');
-      qrOk.classList.add('show');
-    }, 1950);
-    pTimeout(()=>{
-      scanner.classList.remove('scan');
-      viewfinder.classList.remove('show');
-      qrOk.classList.remove('show');
-    }, 2450);
-
-    // 3) até a balança (para exatamente embaixo do visor de peso)
-    pTimeout(()=> moveBoxTo('70.5%'), 2500);
-    pTimeout(()=>{
-      const weight = Math.round(380 + Math.random()*40);
-      const qty = Math.round(weight/UNIT_G);
-      display.classList.add('flash');
-      animateWeightTo(weight, 450);
-      pTimeout(()=>display.classList.remove('flash'), 550);
-      pTimeout(()=>{
-        const sector = sectorSelect.value;
-        stockBySector[sector] += qty;
-        stockEl.textContent = stockBySector[sector];
-        registerSectorReturn(sector, qty);
-        stockEl.classList.add('pop');
-        pTimeout(()=>stockEl.classList.remove('pop'), 300);
-      }, 500);
-    }, 3600);
-
-    // 4) segue para o estoque
-    pTimeout(()=> moveBoxTo('93%'), 4700);
-    pTimeout(()=> box.style.opacity = '0', 5700);
-
-    // 5) libera para a próxima caixa
-    pTimeout(()=>{
-      busy = false;
-      currentTarget = null;
-      btn.classList.remove('busy');
-      setStatus(autoTimer ? 'Demonstração automática' : 'Pronto');
-    }, 6000);
-  }
-</script>
-</body>
+    </script>
+  </body>
 </html>
