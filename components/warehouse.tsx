@@ -13,11 +13,13 @@ import PurchaseCart from "@/components/purchase-cart";
 import RequestSubmissionForm from "@/components/request-form";
 import RequestSearch from "@/components/request-search";
 import EmployeeNotifications from "@/components/employee-notifications";
+import ProductQrPicker from "@/components/product-qr-picker";
 import SectorStockPage from "@/components/sector-stock";
 import WarehouseProfileScreen from "@/components/warehouse-profile";
 import WarehouseQueue from "@/components/warehouse-queue";
 import { materialsCatalog, navItems, requests, sectors, stock } from "@/lib/mock-data";
 import { getAllRequests, getServerRequests, subscribeToRequests, type RequestRecord } from "@/lib/request-storage";
+import { createPurchaseRequestBatch } from "@/lib/purchase-storage";
 import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications } from "@/lib/notification-storage";
 import { getRequesterCode, getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
 import ThemeToggle from "@/components/theme-toggle";
@@ -254,8 +256,17 @@ function MaterialSelection() {
   }
 
   function updateQuantity(code: string, quantity: number) {
-    const available = materialsCatalog.find((item) => item.code === code)?.quantity ?? 1;
+    const available = Math.max(materialsCatalog.find((item) => item.code === code)?.quantity ?? 1, 1);
     setSelectedMaterials((current) => ({ ...current, [code]: Math.min(available, Math.max(1, quantity || 1)) }));
+  }
+
+  function selectScannedMaterial(material: (typeof materialsCatalog)[number]) {
+    setSelectedMaterials((current) => ({ ...current, [material.code]: current[material.code] ?? 1 }));
+    setSearch(material.code);
+    setCategory("Todas");
+    setAvailability("Todos");
+    setUnit("Todas");
+    setPage(1);
   }
 
   function clearFilters() {
@@ -268,7 +279,7 @@ function MaterialSelection() {
       <div className="border-b border-slate-700 bg-[#102238] p-5 text-white sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-bold text-white">Catálogo do almoxarifado</h2><p className="mt-1 text-xs text-slate-300">Pesquise por descrição, código, categoria ou especificação.</p></div>
-          <span className="rounded-full bg-sky-300/15 px-3 py-1.5 text-xs font-bold text-sky-100 ring-1 ring-inset ring-sky-200/25">{filteredMaterials.length} {filteredMaterials.length === 1 ? "item" : "itens"}</span>
+          <div className="flex items-center gap-2"><ProductQrPicker onSelect={selectScannedMaterial}/><span className="rounded-full bg-sky-300/15 px-3 py-1.5 text-xs font-bold text-sky-100 ring-1 ring-inset ring-sky-200/25">{filteredMaterials.length} {filteredMaterials.length === 1 ? "item" : "itens"}</span></div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1.5fr)_1fr_1fr_1fr]">
           <label className="flex h-11 items-center gap-2.5 rounded-lg border border-white/20 bg-white px-3 text-slate-500 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"><Search size={16} /><span className="sr-only">Pesquisar material</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Nome, código ou especificação" className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-900 outline-none placeholder:text-slate-500" /></label>
@@ -284,9 +295,9 @@ function MaterialSelection() {
           const status = item.quantity <= 0 ? "Indisponível" : item.quantity <= item.minimum ? "Crítico" : "Disponível";
           const badge = status === "Indisponível" ? "bg-slate-100 text-slate-600" : status === "Crítico" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700";
           return <div key={item.code} className={`grid min-h-[92px] grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl border-l-4 px-3 py-3 shadow-sm ring-1 ring-inset transition duration-200 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-4 sm:px-5 ${selected ? "border-blue-600 bg-blue-50 ring-blue-200 shadow-blue-100" : "border-transparent bg-white ring-slate-200 hover:border-blue-400 hover:bg-blue-50/40 hover:shadow-md"}`}>
-            <label className={`flex min-h-11 min-w-11 items-center justify-center ${item.quantity > 0 ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`} aria-label={`Selecionar ${item.name}`}><input type="checkbox" checked={selected} disabled={item.quantity <= 0} onChange={(event) => toggleMaterial(item.code, event.target.checked)} className="h-5 w-5 rounded accent-[#0B57D0]" /></label>
+            <label className={`flex min-h-11 min-w-11 items-center justify-center ${item.quantity > 0 || selected ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`} aria-label={`Selecionar ${item.name}`}><input type="checkbox" checked={selected} disabled={item.quantity <= 0 && !selected} onChange={(event) => toggleMaterial(item.code, event.target.checked)} className="h-5 w-5 rounded accent-[#0B57D0]" /></label>
             <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-[15px] font-bold tracking-[-.01em] text-slate-950">{item.name}</p><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${badge}`}>{status}</span></div><p className="mt-1 truncate text-xs font-medium text-slate-600">{item.specification}</p><div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]"><span className="rounded-md bg-slate-100 px-2 py-1 font-mono font-bold text-slate-700">{item.code}</span><span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-800">{item.category}</span><span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-700">{item.quantity} {item.unit} disponíveis</span></div></div>
-            {selected && <label className="col-span-2 flex items-center justify-end gap-2 rounded-lg bg-white/80 p-2 sm:col-span-1"><span className="text-xs font-bold text-slate-700">Quantidade</span><input aria-label={`Quantidade de ${item.name}`} type="number" min={1} max={item.quantity} value={selectedMaterials[item.code]} onChange={(event) => updateQuantity(item.code, Number(event.target.value))} className="h-11 w-20 rounded-lg border-2 border-blue-200 bg-white px-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>}
+            {selected && <label className="col-span-2 flex items-center justify-end gap-2 rounded-lg bg-white/80 p-2 sm:col-span-1"><span className="text-xs font-bold text-slate-700">Quantidade</span><input aria-label={`Quantidade de ${item.name}`} type="number" min={1} max={Math.max(item.quantity, 1)} value={selectedMaterials[item.code]} onChange={(event) => updateQuantity(item.code, Number(event.target.value))} className="h-11 w-20 rounded-lg border-2 border-blue-200 bg-white px-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>}
           </div>;
         }) : <div className="px-5 py-14 text-center"><Package size={26} className="mx-auto text-slate-300" /><p className="mt-3 text-sm font-semibold text-slate-700">Nenhum material encontrado</p><p className="mt-1 text-xs text-slate-500">Ajuste a busca ou os filtros para ver outros itens.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-[#0B57D0] hover:underline">Limpar filtros</button>}</div>}
       </div>
@@ -319,6 +330,7 @@ function QrPage() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [productPurchase, setProductPurchase] = useState<{ name: string; code: string; quantity: number; unit: string; batchId: string } | null>(null);
 
   function validateCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -331,7 +343,35 @@ function QrPage() {
     router.push("/separacao?request=" + encodeURIComponent(request.id));
   }
 
-  return <><PageHeading eyebrow="Opera&#231;&#227;o &#183; Valida&#231;&#227;o" title="Leitor de QR Code" description="Aponte o leitor para o código do comprovante do requisitante."/><div className="mx-auto max-w-2xl"><Card className="p-5 sm:p-8"><div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center"><div className="relative flex h-44 w-44 items-center justify-center rounded-2xl border border-blue-100 bg-white text-[#0B57D0]" aria-hidden="true"><span className="absolute left-4 top-4 h-7 w-7 rounded-tl-lg border-l-[3px] border-t-[3px] border-[#0B57D0]"/><span className="absolute right-4 top-4 h-7 w-7 rounded-tr-lg border-r-[3px] border-t-[3px] border-[#0B57D0]"/><span className="absolute bottom-4 left-4 h-7 w-7 rounded-bl-lg border-b-[3px] border-l-[3px] border-[#0B57D0]"/><span className="absolute bottom-4 right-4 h-7 w-7 rounded-br-lg border-b-[3px] border-r-[3px] border-[#0B57D0]"/><QrCode size={90} strokeWidth={1.1}/><span className="absolute left-5 right-5 top-1/2 h-px bg-blue-500/70"/></div><p className="mt-6 text-sm font-semibold text-slate-800">&#193;rea do leitor</p><p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">A câmera será ativada quando o leitor estiver disponível. Por enquanto, informe o código da requisição.</p></div><form onSubmit={validateCode} className="mt-5"><label htmlFor="request-code" className="mb-2 block text-xs font-semibold text-slate-700">C&#243;digo da requisi&#231;&#227;o</label><div className="flex flex-col gap-2 sm:flex-row"><input id="request-code" required value={code} onChange={(event) => { setCode(event.target.value); setError(""); }} placeholder="Ex.: REQ-2045" className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/><Button type="submit"><QrCode size={16}/>Validar c&#243;digo</Button></div>{error && <p role="alert" className="mt-2 text-xs font-medium text-rose-700">{error}</p>}</form></Card></div></>;
+  return <>
+    <PageHeading eyebrow="Opera&#231;&#227;o &#183; Valida&#231;&#227;o" title="Leitor de QR Code" description="Leia etiquetas de produtos para solicitar reposi&#231;&#227;o ou valide uma requisi&#231;&#227;o." />
+    <div className="mx-auto grid max-w-3xl gap-4">
+      <Card className="p-5 sm:p-6">
+        <h2 className="text-sm font-bold text-slate-900">Solicitar produto para Compras</h2>
+        <p className="mt-1 text-xs text-slate-500">Os c&#243;digos num&#233;ricos das etiquetas cadastradas geram um pedido de reposi&#231;&#227;o.</p>
+        <div className="mt-4"><ProductQrPicker purpose="purchase" onSelect={(material) => {
+          const quantity = Math.max(material.minimum - material.quantity, 1);
+          const batchId = createPurchaseRequestBatch({
+            items: [{ material: material.name, code: material.code, quantity, unit: material.unit }],
+            requester: "Carlos Silva",
+            sector: "Almoxarifado - Planta 01",
+            reason: "Reposição de estoque solicitada pela leitura do QR Code do produto.",
+          });
+          setProductPurchase({ name: material.name, code: material.code, quantity, unit: material.unit, batchId });
+        }} /></div>
+        {productPurchase && <div role="status" className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p className="text-sm font-bold text-emerald-900">Pedido de reposi&#231;&#227;o criado</p><p className="mt-1 text-xs text-emerald-800">{productPurchase.name} · {productPurchase.code}</p><p className="mt-1 text-xs text-emerald-800">Quantidade: {productPurchase.quantity} {productPurchase.unit}</p><p className="mt-2 font-mono text-xs text-emerald-800">{productPurchase.batchId}</p><button type="button" onClick={() => setProductPurchase(null)} className="mt-3 min-h-9 rounded-md px-3 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100">Concluir</button></div>}
+      </Card>
+      <Card className="p-5 sm:p-6">
+        <h2 className="text-sm font-bold text-slate-900">Validar requisi&#231;&#227;o</h2>
+        <p className="mt-1 text-xs text-slate-500">Informe o c&#243;digo da requisi&#231;&#227;o para abrir a separa&#231;&#227;o.</p>
+        <form onSubmit={validateCode} className="mt-4">
+          <label htmlFor="request-code" className="mb-2 block text-xs font-semibold text-slate-700">C&#243;digo da requisi&#231;&#227;o</label>
+          <div className="flex flex-col gap-2 sm:flex-row"><input id="request-code" required value={code} onChange={(event) => { setCode(event.target.value); setError(""); }} placeholder="Ex.: REQ-2045" className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/><Button type="submit"><QrCode size={16}/>Validar c&#243;digo</Button></div>
+          {error && <p role="alert" className="mt-2 text-xs font-medium text-rose-700">{error}</p>}
+        </form>
+      </Card>
+    </div>
+  </>;
 }
 
 function InventoryPage() { const [search, setSearch] = useState(""); const filteredStock = stock.filter((item) => `${item.name} ${item.code}`.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR"))); return <><PageHeading eyebrow="Controle de materiais" title="Inventário" description="Consulte saldos e níveis de reposição dos materiais." action={<Button><Plus size={16}/>Adicionar material</Button>}/><div data-reveal-group className="mb-5 grid gap-4 sm:grid-cols-3"><KpiCard label="Itens cadastrados" value={String(stock.length)} note="itens no catálogo" icon={Package} accent="bg-blue-50 text-[#0B57D0]"/><KpiCard label="Estoque crítico" value="03" note="requer atenção" icon={Activity} accent="bg-rose-50 text-rose-700"/><KpiCard label="Movimentações hoje" value="18" note="entradas e saídas" icon={Truck} accent="bg-emerald-50 text-emerald-700"/></div><Card><div className="flex flex-col justify-between gap-3 p-5 sm:flex-row sm:items-center"><div><h2 className="text-sm font-bold text-slate-900">Materiais em estoque</h2><p className="mt-1 text-xs text-slate-500">Saldos demonstrativos</p></div><label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-slate-400"><Search size={15}/><input aria-label="Buscar material" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar material..." className="w-full bg-transparent text-xs outline-none sm:w-48"/></label></div><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left"><thead><tr className="border-y border-slate-100 bg-slate-50 text-[10px] uppercase text-slate-500"><th className="px-5 py-3">Material</th><th className="px-4 py-3">Código</th><th className="px-4 py-3">Disponível</th><th className="px-4 py-3">Estoque mínimo</th><th className="px-4 py-3">Situação</th></tr></thead><tbody data-reveal-group>{filteredStock.map((item) => <tr data-reveal-item key={item.code} className="border-b border-slate-100"><td className="px-5 py-4 text-xs font-semibold text-slate-800">{item.name}</td><td className="px-4 py-4 font-mono text-xs text-slate-500">{item.code}</td><td className="px-4 py-4 text-xs font-semibold text-slate-700">{item.quantity} {item.unit}</td><td className="px-4 py-4 text-xs text-slate-500">{item.minimum} {item.unit}</td><td className="px-4 py-4"><StatusBadge status="Crítico"/></td></tr>)}</tbody></table>{filteredStock.length === 0 && <p className="px-5 py-10 text-center text-sm text-slate-500">Nenhum material encontrado.</p>}</div></Card></> }

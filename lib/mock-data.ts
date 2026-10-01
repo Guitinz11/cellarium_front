@@ -64,6 +64,20 @@ export const seededMaterials = [
   {"name": "Abraçadeira de Nylon", "code": "UT-009", "quantity": 50, "minimum": 10, "unit": "Pacote", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Fixação de cabos e mangueiras"},
   {"name": "Engate Rápido Pneumático Macho", "code": "UT-011", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Conexão pneumática rápida"},
   {"name": "Trena Métrica Manual com Trava - 5 Metros", "code": "UT-018", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Medição manual, trava automática, 5 metros"},
+  {"name": "Roda de Borracha 10200 BIN 3/4 (10 pol.)", "code": "6687", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, referência 10200 BIN, eixo 3/4 pol., diâmetro 10 pol."},
+  {"name": "Roda de Chapa 16 - 1210B1 Roda RM 6", "code": "4226", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de chapa 16, referência 1210B1, roda RM 6"},
+  {"name": "Roda de Borracha 200 x 50 x 19 mm (8 pol.)", "code": "7078", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, dimensões 200 x 50 x 19 mm"},
+  {"name": "Roda de Poliuretano Amarelo Nº 01", "code": "9058", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de poliuretano amarelo, modelo nº 01"},
+  {"name": "Rodízio GLE 414 NPN - 4 pol. giratório", "code": "129", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio giratório GLE 414 NPN, 4 pol."},
+  {"name": "Rodízio FLE 312 NPP - 3 pol. fixo", "code": "120", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio fixo FLE 312 NPP, 3 pol."},
+  {"name": "Rodízio GLE 312 NPP - 3 pol. giratório Marcon", "code": "127", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio giratório GLE 312 NPP, 3 pol., modelo Marcon"},
+  {"name": "Garfo QGMS 3508 R giratório", "code": "173", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Garfo giratório QGMS 3508 R"},
+  {"name": "Garfo QGMX 62 para plataforma elevadora", "code": "7988", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Garfo QGMX 62, aplicação em plataforma elevadora"},
+  {"name": "Guia de Ferro Fundido Nº 06", "code": "17940", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Guia de ferro fundido, modelo nº 06"},
+  {"name": "Pneu Maciço 8 pol.", "code": "1794", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 8 pol."},
+  {"name": "Pneu Maciço 10 pol.", "code": "1796", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 10 pol."},
+  {"name": "Pneu Maciço 9 pol.", "code": "1795", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 9 pol."},
+  {"name": "Roda de Borracha 9200 BIN 3/4 (9 pol.)", "code": "5746", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, referência 9200 BIN, eixo 3/4 pol., diâmetro 9 pol."},
 ];
 
 export const stock = seededMaterials;
