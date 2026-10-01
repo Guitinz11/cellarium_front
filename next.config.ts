@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Preserve the project's custom directives inside AGENTS.md.
+  agentRules: false,
 };
 
 export default nextConfig;

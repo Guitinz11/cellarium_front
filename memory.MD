@@ -164,3 +164,30 @@
 - Porta `3000` já estava ocupada por um processo Next.js e a tentativa de `npm run dev` falhou ao detectar outro servidor. Para testes, a build foi servida em `http://localhost:3002` usando `$env:PORT = '3002'; npm run start`. Reiniciar esse servidor após `npm run build` para testar alterações novas.
 - `npm run build` passou nas últimas alterações verificadas. O lint global mantém avisos de código não utilizado em `QueuePage` (`components/warehouse.tsx`) e `processProductCodeInput` (`components/automatic-purchase-request.tsx`); não remover sem avaliar mudanças locais do usuário.
 - Antes de editar `components/automatic-purchase-request.tsx`, reler seu conteúdo: o usuário avisou que houve alterações externas nesse arquivo.
+
+## Redesign completo do frontend (2026-10-01)
+
+- O frontend foi evoluído mantendo Next.js, TypeScript, Tailwind, rotas, stores, chaves de `localStorage` e os fluxos demonstrativos existentes. O backend permaneceu sem alterações.
+- Sistema visual centralizado em `components/design-system.css`, importado por `app/globals.css`; componentes compartilhados em `components/ui.tsx`. Shells dos dois perfis extraídos para `components/product-shell.tsx` e painel para `components/operations-dashboard.tsx`.
+- A auditoria confirmou o estado atual: 55 materiais e `requests = []` em `lib/mock-data.ts`. Métricas de painel/inventário/análises agora derivam dos registros locais; notas históricas sobre números mock fixos estão superadas.
+- Catálogo usa linhas de seleção, busca sem acentos e filtros expansíveis no celular. Inventário tem paginação de 12 itens. Tabelas apresentam rótulos por campo no mobile; navegação inferior do requisitante tem texto e estado ativo.
+- `CountUp` anima métricas uma vez no viewport, mantém valor final para leitores de tela e respeita movimento reduzido. `useScrollReveal` passou a usar Web Animations para não alterar atributos antes da hidratação. Background animado fica restrito ao login e ao destaque do painel.
+- Modais compartilham foco, Tab, Escape e retorno ao acionador via `useDialogAccessibility`. Foram adicionados estados de carregamento e erro em `app/loading.tsx` e `app/error.tsx`.
+- Separação mostra todos os materiais, mantém confirmação de entrega independente da conclusão da OS e consulta a requisição da URL. Validação por código usa o store de requisições persistidas.
+- Avisos anteriores de `QueuePage` e `processProductCodeInput` foram resolvidos; lint passou sem avisos. TypeScript e build de produção passaram.
+- Revisão no Chrome cobriu 18 telas em quatro larguras, temas claro/escuro e uma rodada de refinamento. A verificação final pelo axe-core terminou sem violações nas telas testadas. Fluxo completo, estados vazios/erros, paginação, CSV/PDF, persistência, teclado e movimento reduzido foram testados com dados isolados. Leitura por câmera física não foi exercitada.
+- `next dev` desta versão sobrescrevia o bloco gerenciado que continha as diretivas personalizadas de `AGENTS.md`. O original foi restaurado; `next.config.ts` usa `agentRules: false` para preservá-lo.
+- Detalhes de auditoria, decisões e validação em `docs/frontend-redesign.md`.
+
+### Ajuste do vídeo de login
+
+- A pedido do usuário, o vídeo de login passou a usar opacidade integral. A camada escura que cobria toda a apresentação foi removida; o gradiente agora acompanha `login-copy`, com transição para transparência acima e à direita do texto. No celular, a proteção de contraste se limita à legenda inferior; “Desde 1988” tem fundo próprio discreto.
+- Resultado conferido no navegador em 390, 768, 1440 e 1920 px, sem overflow. O comportamento de reprodução e de movimento reduzido foi preservado.
+
+### Nova sequência do login e fechamento pela fila (2026-10-01)
+
+- O pedido seguinte substituiu o gradiente localizado anterior: agora o vídeo aparece livre por dois segundos após iniciar a reprodução. Uma camada azul mais suave sobe, recua e termina na metade inferior da área do vídeo, deixando a metade superior clara. Os textos entram em sequência durante a transição. A divisão horizontal foi a interpretação adotada enquanto as perguntas opcionais sobre a direção/divisão final ficaram sem resposta.
+- A sequência não se repete no loop do vídeo nem após redimensionar a janela quando a introdução termina. Movimento reduzido apresenta o estado final imediatamente e pausa o vídeo.
+- Em `components/sector-stock.tsx`, OS com status `Aprovado` também aparecem para fechamento: a aprovação pela fila usava esse status, enquanto a aprovação pelo painel usava `Em andamento`. A seção “Fechar OS e devolver sobras” foi posicionada acima dos indicadores.
+- Fechar a OS continua exigindo entrega confirmada. O formulário valida sobras entre zero e a quantidade de cada item; o registro local mantém `closedRequestIds` para evitar crédito duplicado. A conclusão e a confirmação de sucesso aparecem após salvar as sobras no estoque do setor.
+- Validados: aprovação pela fila → confirmação de entrega → fechamento pelo funcionário; rejeição de quantidade excedente; persistência sem duplicação ao recarregar; bloqueio antes da entrega. Sequência visual conferida em 390, 768, 1440 e 1920 px e com movimento reduzido. Axe-core passou para login, estoque e modal em 390/768/1440 px nos dois temas; lint e build com TypeScript passaram.

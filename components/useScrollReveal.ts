@@ -4,13 +4,25 @@ import { useEffect } from "react";
 
 export function useScrollReveal() {
   useEffect(() => {
+    if (!("IntersectionObserver" in window) || !("animate" in Element.prototype)) return;
     const targets = "[data-reveal], [data-reveal-group]";
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const revealed = new WeakSet<Element>();
+    const animations = new Set<Animation>();
+    const animate = (element: Element, delay = 0) => {
+      const animation = element.animate(
+        [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }],
+        { duration: 360, delay, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" },
+      );
+      animations.add(animation);
+      animation.onfinish = () => animations.delete(animation);
+    };
     const reveal = (element: HTMLElement) => {
-      Array.from(element.children)
-        .filter((child): child is HTMLElement => child instanceof HTMLElement && child.matches("[data-reveal-item]"))
-        .forEach((item, index) => item.style.setProperty("--reveal-delay", `${Math.min(index, 8) * 60}ms`));
-      element.classList.add("is-visible");
-      element.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((item) => item.classList.add("is-visible"));
+      revealed.add(element);
+      if (motion.matches) return;
+      const items = Array.from(element.children).filter((child) => child.matches("[data-reveal-item]"));
+      if (items.length) items.forEach((item, index) => animate(item, Math.min(index, 6) * 40));
+      else animate(element);
     };
     const collectTargets = (root: Element) => {
       const candidates = [
@@ -21,13 +33,6 @@ export function useScrollReveal() {
         candidate.hasAttribute("data-reveal-group") || !candidate.parentElement?.closest("[data-reveal-group]"),
       );
     };
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion || !("IntersectionObserver" in window)) {
-      document.querySelectorAll<HTMLElement>(targets).forEach(reveal);
-      document.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((element) => element.classList.add("is-visible"));
-      return;
-    }
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -38,27 +43,25 @@ export function useScrollReveal() {
     }, { threshold: 0.12, rootMargin: "0px 0px -32px 0px" });
 
     const observe = (element: Element) => {
-      const visibleGroup = element.closest<HTMLElement>("[data-reveal-group].is-visible");
-      if (visibleGroup) {
-        if (element instanceof HTMLElement && element.matches("[data-reveal-item]")) element.classList.add("is-visible");
-        element.querySelectorAll<HTMLElement>("[data-reveal-item]").forEach((item) => item.classList.add("is-visible"));
-      }
       collectTargets(element).forEach((target) => {
-        if (!target.classList.contains("is-visible")) observer.observe(target);
+        if (!revealed.has(target)) observer.observe(target);
       });
     };
-
-    document.documentElement.classList.add("reveal-enabled");
+    // Web Animations leaves React's HTML untouched, including during hydration.
     document.querySelectorAll<HTMLElement>(targets).forEach(observe);
     const mutations = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => {
       if (node instanceof Element) observe(node);
     })));
     mutations.observe(document.body, { childList: true, subtree: true });
+    const cancelAnimations = () => { animations.forEach((animation) => animation.cancel()); animations.clear(); };
+    const onMotionChange = () => { if (motion.matches) cancelAnimations(); };
+    motion.addEventListener("change", onMotionChange);
 
     return () => {
       mutations.disconnect();
       observer.disconnect();
-      document.documentElement.classList.remove("reveal-enabled");
+      motion.removeEventListener("change", onMotionChange);
+      cancelAnimations();
     };
   }, []);
 }

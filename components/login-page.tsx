@@ -2,94 +2,94 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, Boxes, ClipboardList, Eye, EyeOff, Info, LockKeyhole, PackageCheck, UserRound } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
+import { Button } from "@/components/ui";
 import { sectors } from "@/lib/mock-data";
 
 type Profile = "funcionario" | "almoxarife";
 
 export default function LoginPage() {
   const router = useRouter();
+  const video = useRef<HTMLVideoElement>(null);
   const [profile, setProfile] = useState<Profile>("funcionario");
   const [showPassword, setShowPassword] = useState(false);
   const [employeeCode, setEmployeeCode] = useState("");
   const [sector, setSector] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [introReady, setIntroReady] = useState(false);
+  const [introComplete, setIntroComplete] = useState(false);
+
+  useEffect(() => {
+    if (!introReady) return;
+    const completion = window.setTimeout(() => setIntroComplete(true), 4600);
+    return () => window.clearTimeout(completion);
+  }, [introReady]);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      if (motion.matches) { video.current?.pause(); setIntroReady(true); }
+      else void video.current?.play().catch(() => setIntroReady(true));
+    };
+    update();
+    motion.addEventListener("change", update);
+    return () => motion.removeEventListener("change", update);
+  }, []);
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (profile === "funcionario") {
-      window.localStorage.setItem("cellarium-user-role", "requisitante");
-      window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
-      window.localStorage.setItem("cellarium-requester-sector", sector);
-      window.dispatchEvent(new Event("cellarium-requester-profile-updated"));
-      router.push("/materiais");
-      return;
+    if (submitting) return;
+    if (!employeeCode.trim()) { setError("Informe seu código de acesso."); return; }
+    setError("");
+    setSubmitting(true);
+    try {
+      if (profile === "funcionario") {
+        window.localStorage.setItem("cellarium-user-role", "requisitante");
+        window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
+        window.localStorage.setItem("cellarium-requester-sector", sector);
+        window.dispatchEvent(new Event("cellarium-requester-profile-updated"));
+        router.push("/materiais");
+      } else {
+        window.localStorage.setItem("cellarium-user-role", "almoxarife");
+        router.push("/painel");
+      }
+    } catch {
+      setSubmitting(false);
+      setError("Permita o armazenamento deste site no navegador para acessar o portal.");
     }
-    window.localStorage.setItem("cellarium-user-role", "almoxarife");
-    router.push("/painel");
   }
 
-  return (
-    <main className="login-shell grid min-h-[100svh] lg:grid-cols-[1.06fr_.94fr]">
-      <section className="login-showcase relative min-h-[130px] overflow-hidden sm:min-h-[220px] lg:min-h-screen" aria-label="Apresentação Marcon">
-        <video className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline poster="/logo.png" aria-label="Vídeo institucional da Marcon">
-          <source src="/video_tela_login.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/30" />
-        <div className="relative z-10 flex h-full min-h-[130px] flex-col justify-between p-3 sm:min-h-[220px] sm:p-10 lg:min-h-screen lg:p-14">
-          <Link href="/login" className="inline-flex w-fit items-center rounded-xl bg-white px-3 py-2 shadow-sm transition hover:scale-[1.02] sm:px-4 sm:py-3" aria-label="Marcon, página inicial de acesso">
-            <BrandLogo className="w-[145px] sm:w-[174px]" priority />
-          </Link>
-          <div data-reveal className="max-w-xl pb-0 text-white [text-shadow:0_2px_18px_rgba(0,0,0,.55)] sm:pb-2">
-            <span className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/40 bg-slate-950/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.2em] text-white backdrop-blur-md sm:mb-5 sm:text-xs"><span className="h-1.5 w-1.5 rounded-full bg-sky-300" />Portal interno Marcon</span>
-            <h1 className="hidden max-w-lg text-2xl font-bold leading-[1.06] tracking-[-.04em] sm:block sm:text-5xl lg:text-[3.5rem]">Tudo em movimento. <span className="text-sky-300">Do seu jeito.</span></h1>
-            <p className="mt-4 hidden max-w-md text-sm font-medium leading-6 text-white sm:block sm:mt-5 sm:text-base sm:leading-7">Acesse o portal de materiais e acompanhe a operação com praticidade, onde estiver.</p>
-            <div className="mt-7 hidden items-center gap-2 text-xs font-semibold text-white sm:flex"><ShieldCheck size={16} className="text-sky-300" />Acesso seguro para equipe Marcon</div>
-          </div>
-        </div>
-        <div className="pointer-events-none absolute bottom-0 right-0 h-44 w-44 rounded-full bg-sky-400/20 blur-3xl" />
-      </section>
-
-      <section className="login-form-side relative flex items-center justify-center px-5 py-3 sm:px-10 sm:py-8 lg:min-h-screen lg:px-12 lg:py-10 xl:px-20">
-        <ThemeToggle className="absolute right-5 top-5 !border-slate-200/80 !bg-white/70 !text-slate-600 sm:right-8 sm:top-8" />
-        <div data-reveal className="w-full max-w-[430px]">
-          <div className="mb-5 sm:mb-8 lg:mb-10">
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0b57d0]">Bem-vindo(a)</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-[-.04em] text-slate-950 sm:mt-3 sm:text-[2.6rem]">Acesse sua conta</h2>
-            <p className="mt-2 text-xs leading-5 text-slate-500 sm:mt-3 sm:text-sm sm:leading-6">Entre com suas credenciais para continuar no portal Marcon.</p>
-          </div>
-
-          <div className="mb-4 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100/80 p-1 sm:mb-7" role="tablist" aria-label="Tipo de acesso">
-            {(["funcionario", "almoxarife"] as const).map((item) => <button key={item} type="button" role="tab" aria-selected={profile === item} onClick={() => setProfile(item)} className={`min-h-11 rounded-lg px-3 text-sm font-semibold transition duration-200 ${profile === item ? "bg-white text-[#0b57d0] shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{item === "funcionario" ? "Funcionário" : "Almoxarife"}</button>)}
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-3 sm:space-y-5">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">{profile === "funcionario" ? "Código do funcionário" : "Código de acesso"}</span>
-              <span className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 sm:h-[50px]"><UserRound size={18} className="shrink-0 text-slate-400" /><input required autoComplete="username" value={employeeCode} onChange={(event) => setEmployeeCode(event.target.value)} placeholder={profile === "funcionario" ? "Ex.: 123456" : "Informe seu código de acesso"} className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" /></span>
-            </label>
-            {profile === "funcionario" && <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">Seu setor</span><select required value={sector} onChange={(event) => setSector(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 sm:h-[50px]"><option value="">Selecione seu setor</option>{sectors.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700 sm:mb-2 sm:text-sm">Senha</span>
-              <span className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 sm:h-[50px]"><LockKeyhole size={18} className="shrink-0 text-slate-400" /><input autoComplete="current-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} className="rounded-md p-1 text-slate-400 transition hover:text-slate-700">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span>
-            </label>
-            <div className="flex items-center justify-between pt-0.5">
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-600"><input type="checkbox" className="h-4 w-4 rounded accent-[#0b57d0]" />Manter conectado</label>
-              <a href="mailto:ti@marcon.com.br?subject=Recuperar%20acesso" className="rounded text-sm font-semibold text-[#0b57d0] transition hover:text-blue-800">Esqueceu a senha?</a>
-            </div>
-            <button type="submit" className="group mt-2 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[#0b57d0] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(11,87,208,.2)] transition duration-200 hover:scale-[1.01] hover:bg-blue-800 hover:shadow-[0_14px_30px_rgba(11,87,208,.27)] active:scale-[.99]">Entrar no portal <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></button>
-          </form>
-
-          <div className="mt-5 border-t border-slate-200 pt-3 text-center sm:mt-8 sm:pt-6">
-            <p className="hidden text-xs leading-5 text-slate-500 sm:block">Precisa de ajuda para acessar?</p>
-            <a href="mailto:ti@marcon.com.br" className="mt-1 inline-block rounded text-sm font-semibold text-[#0b57d0] transition hover:text-blue-800">Fale com o suporte de TI</a>
-          </div>
-          <p className="mt-3 hidden text-center text-[11px] font-medium tracking-wide text-slate-400 sm:mt-9 sm:block">© {new Date().getFullYear()} Marcon · Acesso restrito</p>
-        </div>
-      </section>
-    </main>
-  );
+  return <main className="login-shell grid min-h-[100svh] lg:grid-cols-[1.05fr_1fr]">
+    <section className={`login-showcase relative overflow-hidden ${introReady ? "intro-ready" : ""} ${introComplete ? "intro-complete" : ""}`} aria-label="Apresentação Marcon">
+      <video ref={video} onPlaying={() => setIntroReady(true)} onError={() => setIntroReady(true)} className="absolute inset-0 h-full w-full object-cover" muted loop playsInline preload="metadata" poster="/logo.png" aria-hidden="true"><source src="/video_tela_login.mp4" type="video/mp4"/></video>
+      <div className="login-video-wash" aria-hidden="true"/>
+      <div className="login-showcase-content relative z-10 flex h-full flex-col justify-between p-6 sm:p-10 lg:p-14">
+        <div className="relative z-10 flex items-center justify-between gap-4"><Link href="/login" className="login-logo" aria-label="Marcon, página de acesso"><BrandLogo className="w-[146px]" priority/></Link><span className="login-kicker login-year hidden sm:block">Desde 1988</span></div>
+        <div className="login-copy max-w-xl py-3 lg:pb-4"><p className="login-kicker login-reveal login-reveal-1 mb-5 hidden sm:block">Pessoas, materiais e produção.</p><h1><span className="login-title-line login-reveal login-reveal-2">Precisão em cada</span><span className="login-title-accent login-reveal login-reveal-3">movimento.</span></h1><p className="login-reveal login-reveal-4 mt-6 hidden max-w-md text-sm leading-7 text-[#d0dced] sm:block">Da requisição à entrega, uma operação mais simples. Tudo o que sua equipe precisa, no lugar certo.</p><div className="login-feature-list"><div className="login-reveal login-reveal-5"><ClipboardList size={20}/><strong>Solicite materiais</strong></div><div className="login-reveal login-reveal-6"><Boxes size={20}/><strong>Organize o estoque</strong></div><div className="login-reveal login-reveal-7"><PackageCheck size={20}/><strong>Acompanhe a entrega</strong></div></div></div>
+        <p className="login-kicker login-mobile-caption login-reveal login-reveal-1 mt-4 text-[9px] sm:hidden">Gestão de materiais · Portal Marcon</p>
+      </div>
+    </section>
+    <section className="login-form-side relative flex items-center justify-center px-6 py-14 sm:px-10 lg:min-h-[100svh] lg:px-14">
+      <ThemeToggle className="absolute right-6 top-5 sm:right-8 sm:top-7"/>
+      <div className="w-full max-w-[400px]">
+        <div className="mb-8"><p className="ui-eyebrow">Bem-vindo ao portal Marcon</p><h2>Acesse sua operação.</h2><p className="mt-3 text-[13px] leading-6 text-slate-500">Escolha seu perfil para solicitar materiais ou gerenciar o almoxarifado.</p></div>
+        <div className="login-profile-switch mb-7" role="group" aria-label="Tipo de acesso">{(["funcionario", "almoxarife"] as const).map((item) => <button key={item} type="button" aria-pressed={profile === item} onClick={() => { setProfile(item); setError(""); }}>{item === "funcionario" ? <UserRound size={16}/> : <Boxes size={16}/>} {item === "funcionario" ? "Funcionário" : "Almoxarife"}</button>)}</div>
+        <form onSubmit={handleLogin} className="space-y-5">
+          <label className="block" htmlFor="login-code"><span className="mb-2 block text-xs font-medium text-slate-700">{profile === "funcionario" ? "Código do funcionário" : "Código de acesso"}</span><span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5"><UserRound size={17} className="shrink-0 text-slate-400"/><input id="login-code" required autoComplete="username" value={employeeCode} onChange={(event) => { setEmployeeCode(event.target.value); setError(""); }} placeholder={profile === "funcionario" ? "Ex.: 123456" : "Informe seu código"} className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"/></span></label>
+          {profile === "funcionario" && <label className="block" htmlFor="login-sector"><span className="mb-2 block text-xs font-medium text-slate-700">Seu setor</span><select id="login-sector" required value={sector} onChange={(event) => setSector(event.target.value)} className="h-12 w-full border border-slate-300 px-3.5 text-sm"><option value="">Selecione seu setor</option>{sectors.map((item) => <option key={item}>{item}</option>)}</select><span className="mt-1.5 block text-[10px] text-slate-500">Usaremos este setor nas suas próximas requisições.</span></label>}
+          <label className="block" htmlFor="login-password"><span className="mb-2 block text-xs font-medium text-slate-700">Senha</span><span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5"><LockKeyhole size={17} className="shrink-0 text-slate-400"/><input id="login-password" autoComplete="current-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} aria-pressed={showPassword} className="shell-icon-button -mr-2">{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></span></label>
+          <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" className="h-4 w-4"/>Manter conectado</label><a href="mailto:ti@marcon.com.br?subject=Recuperar%20acesso" className="text-xs font-medium text-brand">Esqueceu a senha?</a></div>
+          {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-700">{error}</p>}
+          <Button type="submit" loading={submitting} className="login-submit">{submitting ? "Abrindo seu portal…" : "Entrar no portal"}{!submitting && <ArrowRight size={16}/>}</Button>
+        </form>
+        <p className="login-demo-note"><Info size={13}/>Ambiente demonstrativo · acesso por perfil</p>
+        <div className="mt-7 border-t border-slate-200 pt-5 text-center"><p className="text-[11px] text-slate-500">Precisa de ajuda? <a href="mailto:ti@marcon.com.br" className="font-medium text-brand">Fale com o suporte de TI</a></p></div>
+      </div>
+    </section>
+  </main>;
 }

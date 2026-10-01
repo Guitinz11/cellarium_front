@@ -1,6 +1,7 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/ui";
 import WarehouseScreen from "@/components/warehouse";
 
 export default function Page() {
-  return <Suspense fallback={<main className="min-h-screen bg-background" />}><WarehouseScreen /></Suspense>;
+  return <Suspense fallback={<PageSkeleton/>}><WarehouseScreen /></Suspense>;
 }

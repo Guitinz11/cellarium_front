@@ -26,5 +26,5 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     window.dispatchEvent(new Event("cellarium-theme-change"));
   }
 
-  return <button type="button" onClick={toggleTheme} aria-label={isDark ? "Ativar tema claro" : "Ativar tema escuro"} title={isDark ? "Tema claro" : "Tema escuro"} className={`theme-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:ring-2 ${className}`}><span className="sr-only">{isDark ? "Tema claro" : "Tema escuro"}</span>{isDark ? <Sun size={17}/> : <Moon size={17}/>}</button>;
+  return <button type="button" onClick={toggleTheme} aria-label={isDark ? "Ativar tema claro" : "Ativar tema escuro"} title={isDark ? "Tema claro" : "Tema escuro"} aria-pressed={isDark} className={`theme-toggle shrink-0 ${className}`}><span className="sr-only">{isDark ? "Tema claro" : "Tema escuro"}</span>{isDark ? <Sun size={17}/> : <Moon size={17}/>}</button>;
 }

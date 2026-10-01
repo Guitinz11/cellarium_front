@@ -7,7 +7,7 @@ interface BrandLogoProps {
 
 export default function BrandLogo({ className = "", priority = false }: BrandLogoProps) {
   return (
-    <span className={`relative block aspect-[5.45/1] overflow-hidden ${className}`}>
+    <span className={`brand-logo relative block aspect-[5.45/1] overflow-hidden ${className}`}>
       <Image
         src="/logo.png"
         alt="Marcon"
