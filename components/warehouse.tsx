@@ -12,11 +12,13 @@ import PurchaseRequest from "@/components/purchase-request";
 import PurchaseCart from "@/components/purchase-cart";
 import RequestSubmissionForm from "@/components/request-form";
 import RequestSearch from "@/components/request-search";
+import EmployeeNotifications from "@/components/employee-notifications";
 import SectorStockPage from "@/components/sector-stock";
 import WarehouseProfileScreen from "@/components/warehouse-profile";
 import WarehouseQueue from "@/components/warehouse-queue";
 import { materialsCatalog, navItems, requests, sectors, stock } from "@/lib/mock-data";
-import { getAllRequests, getServerRequests, subscribeToRequests } from "@/lib/request-storage";
+import { getAllRequests, getServerRequests, subscribeToRequests, type RequestRecord } from "@/lib/request-storage";
+import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications } from "@/lib/notification-storage";
 import { getRequesterCode, getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
 import ThemeToggle from "@/components/theme-toggle";
 
@@ -78,21 +80,23 @@ function Sidebar({ open, close }: { open: boolean; close: () => void }) {
 
 function Topbar({ onMenu }: { onMenu: () => void }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [readIds, setReadIds] = useState<string[]>([]);
+  const readSnapshot = useSyncExternalStore(subscribeToReadNotifications, () => getReadNotificationsSnapshot("warehouse"), getServerReadNotificationsSnapshot);
+  const readIds = parseReadNotificationIds(readSnapshot);
   const today = useSyncExternalStore(subscribeToClock, getTodaySnapshot, getServerTodaySnapshot);
   const pendingRequest = requests.find((request) => request.status === "Pendente");
   const criticalItem = stock.find((item) => item.quantity < item.minimum);
   const notifications = [
-    ...(pendingRequest ? [{ id: "pending-request", href: "/fila", title: "Pedido aguardando análise", detail: pendingRequest.id + " - " + pendingRequest.requester }] : []),
-    ...(criticalItem ? [{ id: "critical-stock", href: "/inventario", title: "Estoque abaixo do mínimo", detail: criticalItem.name + " - " + criticalItem.quantity + " " + criticalItem.unit + " disponíveis" }] : []),
+    ...(pendingRequest ? [{ id: `pending-request-${pendingRequest.id}`, href: "/fila", title: "Pedido aguardando análise", detail: pendingRequest.id + " - " + pendingRequest.requester }] : []),
+    ...(criticalItem ? [{ id: `critical-stock-${criticalItem.code}-${criticalItem.quantity}`, href: "/inventario", title: "Estoque abaixo do mínimo", detail: criticalItem.name + " - " + criticalItem.quantity + " " + criticalItem.unit + " disponíveis" }] : []),
   ];
-  const unreadCount = notifications.filter((notification) => !readIds.includes(notification.id)).length;
+  const unreadNotifications = notifications.filter((notification) => !readIds.includes(notification.id));
+  const unreadCount = unreadNotifications.length;
 
   return <header className="sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
     <div className="flex items-center gap-3"><button aria-label="Abrir menu" onClick={onMenu} className="rounded-lg border border-slate-200 p-2 text-slate-600 lg:hidden"><Menu size={19} /></button><div><p className="text-sm font-semibold text-slate-900">Bom dia</p><p className="mt-0.5 hidden min-h-4 text-xs capitalize text-slate-500 sm:block">{today}</p></div></div>
     <div className="flex items-center gap-2 sm:gap-3"><label className="hidden items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 sm:flex"><Building2 size={15} className="text-[#0B57D0]"/><span className="text-left"><span className="block text-[9px] font-bold uppercase tracking-wide text-slate-400">Setor atendido</span><span className="relative block w-[210px]"><select defaultValue={sectors[0]} aria-label="Setor atendido" className="w-full appearance-none bg-transparent pr-6 text-xs font-semibold text-slate-700 outline-none">{sectors.map((sector) => <option key={sector}>{sector}</option>)}</select><ChevronDown size={14} aria-hidden="true" className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-slate-400"/></span></span></label><ThemeToggle/><div className="relative">
       <button type="button" onClick={() => setNotificationsOpen((open) => !open)} aria-label="Notifica&#231;&#245;es" aria-expanded={notificationsOpen} aria-haspopup="dialog" className="relative rounded-lg border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50 hover:text-[#0B57D0]"><Bell size={18}/>{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{unreadCount}</span>}</button>
-      {notificationsOpen && <section role="dialog" aria-label="Notifica&#231;&#245;es" className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xl"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><div><h2 className="text-sm font-bold text-slate-900">Notifica&#231;&#245;es</h2><p className="mt-0.5 text-[11px] text-slate-500">Atualiza&#231;&#245;es da opera&#231;&#227;o</p></div><button type="button" aria-label="Fechar notifica&#231;&#245;es" onClick={() => setNotificationsOpen(false)} className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={16}/></button></div>{notifications.length ? <div className="divide-y divide-slate-100">{notifications.map((notification) => <Link key={notification.id} href={notification.href} onClick={() => { setReadIds((current) => current.includes(notification.id) ? current : [...current, notification.id]); setNotificationsOpen(false); }} className="flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50"><span className={"mt-1 h-2 w-2 shrink-0 rounded-full " + (readIds.includes(notification.id) ? "bg-slate-200" : "bg-blue-600")}/><span className="min-w-0"><span className="block text-xs font-semibold text-slate-800">{notification.title}</span><span className="mt-1 block text-[11px] text-slate-500">{notification.detail}</span></span><ArrowRight size={14} className="mt-1 shrink-0 text-slate-400"/></Link>)}</div> : <p className="px-4 py-6 text-center text-xs text-slate-500">Nenhuma notifica&#231;&#227;o no momento.</p>}{unreadCount > 0 && <button type="button" onClick={() => setReadIds(notifications.map((notification) => notification.id))} className="w-full border-t border-slate-100 px-4 py-3 text-xs font-semibold text-[#0B57D0] transition hover:bg-blue-50">Marcar todas como lidas</button>}</section>}
+      {notificationsOpen && <section role="dialog" aria-label="Notifica&#231;&#245;es" className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-xl"><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><div><h2 className="text-sm font-bold text-slate-900">Notifica&#231;&#245;es</h2><p className="mt-0.5 text-[11px] text-slate-500">Atualiza&#231;&#245;es da opera&#231;&#227;o</p></div><button type="button" aria-label="Fechar notifica&#231;&#245;es" onClick={() => setNotificationsOpen(false)} className="rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={16}/></button></div>{unreadNotifications.length ? <div className="divide-y divide-slate-100">{unreadNotifications.map((notification) => <div key={notification.id} className="flex items-start gap-2 px-4 py-3 transition hover:bg-slate-50"><Link href={notification.href} onClick={() => { markNotificationAsRead("warehouse", notification.id); setNotificationsOpen(false); }} className="flex min-w-0 flex-1 items-start gap-3"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-600"/><span className="min-w-0"><span className="block text-xs font-semibold text-slate-800">{notification.title}</span><span className="mt-1 block text-[11px] text-slate-500">{notification.detail}</span></span><ArrowRight size={14} className="mt-1 shrink-0 text-slate-400"/></Link><button type="button" aria-label={`Marcar como lida: ${notification.title}`} title="Marcar como lida" onClick={() => markNotificationAsRead("warehouse", notification.id)} className="rounded-md p-1.5 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"><Check size={15}/></button></div>)}</div> : <p className="px-4 py-6 text-center text-xs text-slate-500">Nenhuma notifica&#231;&#227;o nova.</p>}</section>}
     </div><div className="hidden h-9 w-px bg-slate-200 sm:block"/><div className="hidden items-center gap-2 sm:flex"><div className="h-8 w-8 rounded-full bg-slate-200 text-center text-xs font-semibold leading-8 text-slate-700">CS</div><span className="text-xs font-semibold text-slate-700">Carlos Silva</span></div></div>
   </header>;
 }
@@ -352,7 +356,7 @@ function requestDateValue(value: string) {
   return year ? new Date(year, month - 1, day).getTime() : Number.NaN;
 }
 
-function downloadHistorySpreadsheet(rows: typeof requests, filename: string) {
+function downloadHistorySpreadsheet(rows: RequestRecord[], filename: string) {
   const columns = ["Requisição", "Ordem de serviço", "Solicitante", "Setor", "Turno", "Data desejada da entrega", "Status", "Materiais"];
   const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const content = [columns, ...rows.map((row) => [row.id, row.order, row.requester, row.sector, row.shift ?? "", row.date, row.status, row.items])]
@@ -441,6 +445,9 @@ function RequesterLayout({ children }: { children: ReactNode }) {
             <Link aria-label="Conversas com o almoxarifado" title="Conversas" className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-semibold md:px-3 ${pathname === "/chat" ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/chat">
               <MessageCircle size={15}/><span className="hidden md:inline">Chat</span>
             </Link>
+            <Link aria-label="Notificações" title="Notificações" className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-xs font-semibold md:px-3 ${pathname === "/notificacoes" ? "bg-blue-50 text-[#0B57D0]" : "text-slate-600 hover:bg-slate-50"}`} href="/notificacoes">
+              <Bell size={15}/><span className="hidden md:inline">Notificações</span>
+            </Link>
           </nav>
           <ThemeToggle className="h-9 w-9 shrink-0"/>
           <div className="hidden items-center gap-2 border-l border-slate-200 pl-4 lg:flex">
@@ -461,6 +468,7 @@ export default function WarehouseScreen() {
   if (pathname === "/" || pathname === "/login") return <LoginChoice/>;
   if (pathname.startsWith("/login")) return <LoginPage requester={pathname.includes("requisitante")}/>;
   if (pathname === "/chat") return <RequesterLayout><RequestChat role="employee"/></RequesterLayout>;
+  if (pathname === "/notificacoes") return <RequesterLayout><EmployeeNotifications/></RequesterLayout>;
   if (pathname === "/acompanhar") return <RequesterLayout><RequestSearch/></RequesterLayout>;
   if (pathname === "/materiais" || pathname === "/pedido" || pathname === "/acompanhar" || pathname === "/meu-estoque") return <RequesterLayout>{pathname === "/materiais" ? <MaterialSelection/> : pathname === "/pedido" ? <RequestSubmissionForm/> : pathname === "/acompanhar" ? <TrackingPage/> : <SectorStockPage/>}</RequesterLayout>;
   const content: Record<string, ReactNode> = { "/": <Dashboard/>, "/painel": <Dashboard/>, "/analises": <AnalyticsPage/>, "/fila": <WarehouseQueue/>, "/pedido": <RequestForm/>, "/materiais": <MaterialSelection/>, "/acompanhar": <TrackingPage/>, "/separacao": <SeparationPage/>, "/estoque-setor": <SectorStockPage isWarehouse/>, "/qrcode": <QrPage/>, "/historico": <HistoryPage/>, "/inventario": <InventoryPage/> };

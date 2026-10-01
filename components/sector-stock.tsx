@@ -1,10 +1,11 @@
 ﻿"use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { ArrowDownToLine, Bell, Boxes, Check, Package, Search, Send } from "lucide-react";
+import { ArrowDownToLine, Bell, Boxes, Check, ChevronDown, Package, Search, Send } from "lucide-react";
 import { sectors } from "@/lib/mock-data";
 import { getAllRequests, getServerRequests, subscribeToRequests, updateRequestStatus } from "@/lib/request-storage";
 import { getRequesterCode, getUserRole, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
+import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications } from "@/lib/notification-storage";
 
 type SectorItem = {
   code: string;
@@ -85,6 +86,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
   const [search, setSearch] = useState("");
   const [amounts, setAmounts] = useState<Record<string, number>>({});
   const [sentMessages, setSentMessages] = useState<string[]>([]);
+  const [ordersExpanded, setOrdersExpanded] = useState(true);
   const requests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
   const openOrders = requests.filter((request) => request.status === "Em andamento" && (isWarehouse || request.sector === sector));
   const [closingOrder, setClosingOrder] = useState<(typeof requests)[number] | null>(null);
@@ -110,6 +112,10 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
     return matchesSector && `${item.name} ${item.code}`.toLocaleLowerCase("pt-BR").includes(query);
   });
   const sectorMessages = data.messages.filter((message) => message.sector === sector).slice().sort((a, b) => b.createdAt - a.createdAt);
+  const readScope = `employee:${requesterCode || sector || "default"}`;
+  const readSnapshot = useSyncExternalStore(subscribeToReadNotifications, () => getReadNotificationsSnapshot(readScope), getServerReadNotificationsSnapshot);
+  const readIds = parseReadNotificationIds(readSnapshot);
+  const unreadSectorMessages = sectorMessages.filter((message) => !readIds.includes(message.id));
   const totalUnits = visibleItems.reduce((total, item) => total + item.quantity, 0);
   const lowStockCount = visibleItems.filter((item) => item.quantity <= item.minimum).length;
 
@@ -159,22 +165,30 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
       </div>
 
       <section className="mb-8 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-label="Ordens de serviço em andamento">
-        <h2 className="text-sm font-bold text-slate-900">OS em andamento</h2>
-        <p className="mt-1 text-xs text-slate-500">Após utilizar os materiais, feche a OS e registre as sobras.</p>
-        {openOrders.length ? <div className="mt-4 divide-y divide-slate-100">{openOrders.map((request) => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="font-mono text-xs font-bold text-[#0B57D0]">{request.order} · {request.id}</p><p className="mt-1 text-xs text-slate-600">{request.requester} · {request.items}</p></div>{canCloseOrder && <button type="button" onClick={() => { setClosingOrder(request); setLeftovers({}); }} className="min-h-9 rounded-lg bg-[#0B57D0] px-3 text-xs font-semibold text-white hover:bg-blue-800">Fechar OS</button>}</div>)}</div> : <p className="mt-4 text-xs text-slate-500">Nenhuma OS em andamento para este setor.</p>}
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-900">OS em andamento</h2>
+          <button type="button" aria-expanded={ordersExpanded} aria-controls="open-orders-list" aria-label={ordersExpanded ? "Minimizar OS em andamento" : "Expandir OS em andamento"} onClick={() => setOrdersExpanded((expanded) => !expanded)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+            <ChevronDown size={18} className={`transition-transform ${ordersExpanded ? "" : "-rotate-90"}`} />
+          </button>
+        </div>
+        <div id="open-orders-list" hidden={!ordersExpanded}>
+          <p className="mt-1 text-xs text-slate-500">Após utilizar os materiais, feche a OS e registre as sobras.</p>
+          {openOrders.length ? <div className="mt-4 divide-y divide-slate-100">{openOrders.map((request) => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="font-mono text-xs font-bold text-[#0B57D0]">{request.order} · {request.id}</p><p className="mt-1 text-xs text-slate-600">{request.requester} · {request.items}</p></div>{canCloseOrder && <button type="button" onClick={() => { setClosingOrder(request); setLeftovers({}); }} className="min-h-9 rounded-lg bg-[#0B57D0] px-3 text-xs font-semibold text-white hover:bg-blue-800">Fechar OS</button>}</div>)}</div> : <p className="mt-4 text-xs text-slate-500">Nenhuma OS em andamento para este setor.</p>}
+        </div>
       </section>
       {canCloseOrder && closingOrder && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-7"><h2 id="close-order-title" className="text-lg font-bold text-slate-900">Fechar {closingOrder.order}</h2><p className="mt-1 text-xs text-slate-500">Informe a quantidade que sobrou para cada material. Use 0 quando não houver sobra.</p><div className="mt-5 space-y-3">{closingOrder.items.split(";").map((entry, index) => <label key={`${closingOrder.id}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"><span className="text-xs text-slate-700">{entry.trim()}</span><input aria-label={`Quantidade sobrante: ${entry.trim()}`} type="number" min="0" value={leftovers[String(index)] ?? "0"} onChange={(event) => setLeftovers((current) => ({ ...current, [String(index)]: event.target.value }))} className="h-10 w-20 rounded-md border border-slate-200 px-2 text-center text-sm"/></label>)}</div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setClosingOrder(null)} className="min-h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700">Cancelar</button><button type="button" onClick={() => { updateRequestStatus(closingOrder.id, "Concluído", Object.values(leftovers).join(",")); setClosingOrder(null); }} className="min-h-10 rounded-lg bg-[#0B57D0] px-4 text-sm font-semibold text-white">Salvar sobras e fechar</button></div></section></div>}
 
-      <section aria-label="Avisos do almoxarifado" className="mb-7">
-        <div className="mb-3 flex items-center gap-2"><Bell size={15} className="text-amber-700"/><h2 className="text-sm font-semibold text-slate-900">Avisos do almoxarifado</h2><span className="text-[11px] text-slate-400">{sectorMessages.length}</span></div>
-        {sectorMessages.length ? <div className="divide-y divide-amber-200 border-l-2 border-amber-500 bg-amber-50/60">
-          {sectorMessages.slice(0, 3).map((message) => <div key={message.id} className="flex items-start gap-3 px-4 py-3">
+      {!isWarehouse && <section aria-label="Avisos do almoxarifado" className="mb-7">
+        <div className="mb-3 flex items-center gap-2"><Bell size={15} className="text-amber-700"/><h2 className="text-sm font-semibold text-slate-900">Avisos do almoxarifado</h2><span className="text-[11px] text-slate-400">{unreadSectorMessages.length}</span></div>
+        {unreadSectorMessages.length ? <div className="divide-y divide-amber-200 border-l-2 border-amber-500 bg-amber-50/60">
+          {unreadSectorMessages.slice(0, 3).map((message) => <div key={message.id} className="flex items-start gap-3 px-4 py-3">
             <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-800"><Package size={14}/></span>
             <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-slate-900">{message.itemName} <span className="font-normal text-slate-500">· {message.code}</span></p><p className="mt-1 text-xs leading-5 text-slate-600">{message.text}</p></div>
             <time className="shrink-0 text-[10px] text-slate-500">{new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(message.createdAt)}</time>
+            <button type="button" aria-label={`Marcar como lido: ${message.itemName}`} title="Marcar como lido" onClick={() => markNotificationAsRead(readScope, message.id)} className="rounded-md p-1.5 text-slate-500 transition hover:bg-emerald-100 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"><Check size={15}/></button>
           </div>)}
-        </div> : <p className="border-y border-slate-200 py-4 text-xs text-slate-500">Nenhum aviso para este setor.</p>}
-      </section>
+        </div> : <p className="border-y border-slate-200 py-4 text-xs text-slate-500">Nenhum aviso novo para este setor.</p>}
+      </section>}
 
       <section aria-label="Materiais disponíveis no setor">
         <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
