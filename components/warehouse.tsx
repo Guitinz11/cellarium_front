@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Activity, ArrowRight, Boxes, Building2, Check, CheckSquare, ChevronDown, ClipboardList, Eye, FileSpreadsheet, FileText, Package, Plus, QrCode, Search, ShieldCheck, SlidersHorizontal, Truck, UserRound, X } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import InventoryScreen from "@/components/inventory-page";
@@ -26,6 +26,7 @@ import OperationsDashboard from "@/components/operations-dashboard";
 import CountUp from "@/components/count-up";
 import { useInventoryItems } from "@/components/use-inventory-items";
 import { useDialogAccessibility } from "@/components/use-dialog-accessibility";
+import type { Html5Qrcode } from "html5-qrcode";
 
 function KpiCard({ label, value, note, icon: Icon, accent, trend }: { label: string; value: string; note: string; icon: typeof Package; accent: string; trend?: string }) {
   return <Card className="p-5"><div className="flex items-start justify-between"><div><p className="text-[13px] font-medium text-slate-500">{label}</p><p className="mt-4 text-[32px] font-semibold leading-none tracking-[-.04em] text-slate-900"><CountUp value={Number(value) || 0}/></p></div><span className={`flex h-10 w-10 items-center justify-center rounded-lg ${accent}`}><Icon size={19}/></span></div><div className="mt-4 flex items-center gap-1.5 text-xs"><span className="font-semibold text-emerald-700">{trend}</span><span className="text-slate-400">{note}</span></div></Card>;
@@ -106,6 +107,11 @@ function Dashboard() { return <OperationsDashboard/>; }
 function FormField({ label, placeholder, type = "text" }: { label: string; placeholder: string; type?: string }) { return <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">{label}</span><input type={type} placeholder={placeholder} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>; }
 
 function MaterialSelection() {
+  const inventoryItems = useInventoryItems();
+  const availableCatalog = materialsCatalog.map((material) => ({
+    ...material,
+    quantity: inventoryItems.find((item) => item.code === material.code)?.quantity ?? 0,
+  }));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
@@ -114,9 +120,9 @@ function MaterialSelection() {
   const [page, setPage] = useState(1);
   const [selectedMaterials, setSelectedMaterials] = useState<Record<string, number>>({});
   const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const categories = [...new Set(materialsCatalog.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const units = [...new Set(materialsCatalog.map((item) => item.unit))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const filteredMaterials = materialsCatalog.filter((item) => {
+  const categories = [...new Set(availableCatalog.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const units = [...new Set(availableCatalog.map((item) => item.unit))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const filteredMaterials = availableCatalog.filter((item) => {
     const searchable = `${item.name} ${item.code} ${item.category} ${item.specification}`.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const status = item.quantity <= 0 ? "Indisponível" : item.quantity <= item.minimum ? "Crítico" : "Disponível";
     return searchable.includes(normalizedSearch) && (category === "Todas" || item.category === category) && (availability === "Todos" || status === availability) && (unit === "Todas" || item.unit === unit);
@@ -130,6 +136,7 @@ function MaterialSelection() {
   const hasFilters = Boolean(search || category !== "Todas" || availability !== "Todos" || unit !== "Todas");
 
   function toggleMaterial(code: string, checked: boolean) {
+    if (checked && (availableCatalog.find((item) => item.code === code)?.quantity ?? 0) <= 0) return;
     setSelectedMaterials((current) => {
       const next = { ...current };
       if (checked) next[code] = next[code] ?? 1;
@@ -139,7 +146,7 @@ function MaterialSelection() {
   }
 
   function updateQuantity(code: string, quantity: number) {
-    const available = Math.max(materialsCatalog.find((item) => item.code === code)?.quantity ?? 1, 1);
+    const available = Math.max(availableCatalog.find((item) => item.code === code)?.quantity ?? 1, 1);
     setSelectedMaterials((current) => ({ ...current, [code]: Math.min(available, Math.max(1, quantity || 1)) }));
   }
 
@@ -162,7 +169,7 @@ function MaterialSelection() {
       <div className="catalog-toolbar">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-base font-bold">Catálogo do almoxarifado</h2><p className="mt-1 text-xs text-slate-300">Pesquise por descrição, código, categoria ou especificação.</p></div>
-          <div className="flex items-center gap-2"><ProductQrPicker onSelect={selectScannedMaterial}/><span className="catalog-count">{filteredMaterials.length} {filteredMaterials.length === 1 ? "item" : "itens"}</span></div>
+          <div className="flex items-center gap-2"><ProductQrPicker onSelect={selectScannedMaterial} materials={availableCatalog}/><span className="catalog-count">{filteredMaterials.length} {filteredMaterials.length === 1 ? "item" : "itens"}</span></div>
         </div>
         <div className="catalog-controls">
           <label className="flex h-11 items-center gap-2.5 rounded-lg border border-white/20 bg-white px-3 text-slate-500 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"><Search size={16} /><span className="sr-only">Pesquisar material</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Nome, código ou especificação" className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-900 outline-none placeholder:text-slate-500" /></label>
@@ -240,7 +247,70 @@ function QrPage() {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const scannerHandled = useRef(false);
   const [productPurchase, setProductPurchase] = useState<{ name: string; code: string; quantity: number; unit: string; batchId: string } | null>(null);
+  useDialogAccessibility(scannerOpen, () => setScannerOpen(false));
+
+  useEffect(() => {
+    if (!scannerOpen) return;
+    let disposed = false;
+    let scanner: Html5Qrcode | undefined;
+    void import("html5-qrcode").then(({ Html5Qrcode }) => {
+      if (disposed) return;
+      scanner = new Html5Qrcode("request-qr-reader");
+      return scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 230, height: 230 } }, (value) => {
+        if (scannerHandled.current) return;
+        scannerHandled.current = true;
+        const candidates = [value.trim()];
+        try {
+          const parsed: unknown = JSON.parse(value);
+          if (parsed && typeof parsed === "object") {
+            const data = parsed as Record<string, unknown>;
+            for (const key of ["request", "requestId", "id", "code", "codigo", "order", "os"]) {
+              if (typeof data[key] === "string" || typeof data[key] === "number") candidates.push(String(data[key]));
+            }
+          }
+        } catch { /* O conteúdo pode ser apenas o código da requisição. */ }
+        try {
+          const url = new URL(value);
+          for (const key of ["request", "requestId", "id", "code", "codigo", "order", "os"]) {
+            const parameter = url.searchParams.get(key);
+            if (parameter) candidates.push(parameter);
+          }
+          const pathCode = url.pathname.split("/").filter(Boolean).at(-1);
+          if (pathCode) candidates.push(decodeURIComponent(pathCode));
+        } catch { /* O QR pode conter um código simples. */ }
+        const normalized = new Set(candidates.map((candidate) => candidate.trim().toLocaleLowerCase("pt-BR")));
+        const request = requests.find((item) => normalized.has(item.id.toLocaleLowerCase("pt-BR")) || normalized.has(item.order.toLocaleLowerCase("pt-BR")));
+        if (!request || request.status === "Concluído") {
+          scannerHandled.current = false;
+          setError("QR Code inválido ou requisição já concluída. Tente outro código ou informe o número manualmente.");
+          return;
+        }
+        setError("");
+        setScannerOpen(false);
+        router.push("/separacao?request=" + encodeURIComponent(request.id));
+      }, () => undefined).catch((cameraError: unknown) => {
+        if (disposed) return;
+        const name = cameraError instanceof Error ? cameraError.name : "";
+        const message = name === "NotAllowedError" || name === "PermissionDeniedError"
+          ? "Permita o acesso à câmera no navegador para ler o QR Code."
+          : name === "NotFoundError" || name === "DevicesNotFoundError"
+            ? "Nenhuma câmera foi encontrada neste dispositivo. Digite o código da requisição manualmente."
+            : name === "SecurityError"
+              ? "O navegador exige uma conexão segura (HTTPS) para acessar a câmera."
+              : "Não foi possível iniciar a câmera. Confira a permissão ou informe o código manualmente.";
+        setError(message);
+      });
+    }).catch(() => {
+      if (!disposed) setError("Não foi possível carregar o leitor. Digite o código da requisição manualmente.");
+    });
+    return () => {
+      disposed = true;
+      if (scanner?.isScanning) void scanner.stop().catch(() => undefined);
+    };
+  }, [scannerOpen, requests, router]);
 
   function validateCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -276,11 +346,12 @@ function QrPage() {
         <p className="mt-1 text-xs text-slate-500">Informe o c&#243;digo da requisi&#231;&#227;o para abrir a separa&#231;&#227;o.</p>
         <form onSubmit={validateCode} className="mt-4">
           <label htmlFor="request-code" className="mb-2 block text-xs font-semibold text-slate-700">C&#243;digo da requisi&#231;&#227;o</label>
-          <div className="flex flex-col gap-2 sm:flex-row"><input id="request-code" required value={code} onChange={(event) => { setCode(event.target.value); setError(""); }} placeholder="Ex.: REQ-2045" className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/><Button type="submit"><QrCode size={16}/>Validar c&#243;digo</Button></div>
+          <div className="flex flex-col gap-2 sm:flex-row"><input id="request-code" required value={code} onChange={(event) => { setCode(event.target.value); setError(""); }} placeholder="Ex.: REQ-2045" className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/><Button type="submit"><QrCode size={16}/>Validar c&#243;digo</Button><Button type="button" variant="secondary" onClick={() => { scannerHandled.current = false; setError(""); setScannerOpen(true); }}><QrCode size={16}/>Ler QR Code</Button></div>
           {error && <p role="alert" className="mt-2 text-xs font-medium text-rose-700">{error}</p>}
         </form>
       </Card>
     </div>
+    {scannerOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="request-qr-title" className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div><h2 id="request-qr-title" className="text-lg font-bold text-slate-900">Ler QR da requisição</h2><p className="mt-1 text-sm text-slate-500">Aponte a câmera para o código da requisição.</p></div><button type="button" aria-label="Fechar leitor" onClick={() => setScannerOpen(false)} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-slate-600 hover:bg-slate-100">Fechar</button></div><div id="request-qr-reader" className="mt-5 min-h-64 overflow-hidden rounded-lg bg-slate-950"/><p className="mt-3 text-center text-xs text-slate-500">Se a câmera não estiver disponível, feche esta janela e digite o código.</p></section></div>}
   </>;
 }
 
