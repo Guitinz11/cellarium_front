@@ -4,6 +4,7 @@ export type RequestRecord = (typeof requests)[number] & {
   employeeCode?: string;
   shift?: string;
   notes?: string;
+  deliveryConfirmed?: boolean;
 };
 
 const submittedRequestsKey = "cellarium-submitted-requests";
@@ -69,4 +70,20 @@ export function updateRequestStatus(id: string, status: string, leftovers?: stri
   cachedSignature = "";
   getAllRequests();
   window.dispatchEvent(new Event("cellarium-requests-updated"));
+}
+
+export function confirmRequestDelivery(id: string) {
+  const current = readSubmittedRequests();
+  const target = getAllRequests().find((request) => request.id === id);
+  if (!target) return false;
+
+  const exists = current.some((request) => request.id === id);
+  const updated = exists
+    ? current.map((request) => request.id === id ? { ...request, deliveryConfirmed: true } : request)
+    : [{ ...target, deliveryConfirmed: true }, ...current];
+  window.localStorage.setItem(submittedRequestsKey, JSON.stringify(updated));
+  cachedSignature = "";
+  getAllRequests();
+  window.dispatchEvent(new Event("cellarium-requests-updated"));
+  return true;
 }
