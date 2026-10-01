@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { ArrowDownToLine, Bell, Boxes, Check, ChevronDown, Package, Search, Send } from "lucide-react";
-import { sectors } from "@/lib/mock-data";
+import { materialsCatalog, sectors } from "@/lib/mock-data";
 import { getAllRequests, getServerRequests, subscribeToRequests, updateRequestStatus } from "@/lib/request-storage";
 import { getRequesterCode, getUserRole, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
 import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications } from "@/lib/notification-storage";
@@ -25,7 +25,7 @@ type SectorMessage = {
   createdAt: number;
 };
 
-type SectorStockData = { items: SectorItem[]; messages: SectorMessage[] };
+type SectorStockData = { items: SectorItem[]; messages: SectorMessage[]; closedRequestIds?: string[] };
 
 const storageKey = "marcon-sector-stock-v2";
 const initialData: SectorStockData = {
@@ -52,7 +52,10 @@ function parseSavedData(saved: string): SectorStockData {
     if (saved) {
       const parsed: unknown = JSON.parse(saved);
       if (parsed && typeof parsed === "object" && "items" in parsed && "messages" in parsed && Array.isArray(parsed.items) && Array.isArray(parsed.messages)) {
-        return parsed as SectorStockData;
+        const closedRequestIds = "closedRequestIds" in parsed && Array.isArray(parsed.closedRequestIds)
+          ? parsed.closedRequestIds.filter((id): id is string => typeof id === "string")
+          : [];
+        return { ...parsed, closedRequestIds } as SectorStockData;
       }
     }
   } catch {
@@ -141,6 +144,43 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
     setSentMessages((current) => [...current, item.code]);
   }
 
+  function closeOrderWithLeftovers() {
+    if (!closingOrder) return;
+    const savedData = parseSavedData(localStorage.getItem(storageKey) ?? "");
+    const closedRequestIds = savedData.closedRequestIds ?? [];
+    if (!closedRequestIds.includes(closingOrder.id)) {
+      const nextItems = savedData.items.map((item) => ({ ...item }));
+      closingOrder.items.split(";").forEach((entry, index) => {
+        const match = entry.trim().match(/^(.*?)\s*·\s*(\d+(?:[,.]\d+)?)\s*(.*)$/);
+        const material = materialsCatalog.find((item) => item.name.toLocaleLowerCase("pt-BR") === (match?.[1] ?? entry.trim()).toLocaleLowerCase("pt-BR"));
+        const quantity = Math.max(0, Number((leftovers[String(index)] ?? "0").replace(",", ".")) || 0);
+        if (!material || quantity === 0) return;
+
+        const existingIndex = nextItems.findIndex((item) => item.code === material.code && item.sector === closingOrder.sector);
+        if (existingIndex >= 0) {
+          nextItems[existingIndex] = { ...nextItems[existingIndex], quantity: nextItems[existingIndex].quantity + quantity };
+        } else {
+          nextItems.push({
+            code: material.code,
+            name: material.name,
+            sector: closingOrder.sector,
+            quantity,
+            minimum: material.minimum,
+            unit: match?.[3]?.trim() || material.unit,
+          });
+        }
+      });
+      localStorage.setItem(storageKey, JSON.stringify({
+        ...savedData,
+        items: nextItems,
+        closedRequestIds: [...closedRequestIds, closingOrder.id],
+      }));
+      window.dispatchEvent(new Event("marcon-sector-stock-change"));
+    }
+    updateRequestStatus(closingOrder.id, "Concluído", JSON.stringify(leftovers));
+    setClosingOrder(null);
+  }
+
   const heading = isWarehouse ? "Estoque dos setores" : "Estoque do meu setor";
 
   return (
@@ -176,7 +216,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
           {openOrders.length ? <div className="mt-4 divide-y divide-slate-100">{openOrders.map((request) => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="font-mono text-xs font-bold text-[#0B57D0]">{request.order} · {request.id}</p><p className="mt-1 text-xs text-slate-600">{request.requester} · {request.items}</p></div>{canCloseOrder && <button type="button" onClick={() => { setClosingOrder(request); setLeftovers({}); }} className="min-h-9 rounded-lg bg-[#0B57D0] px-3 text-xs font-semibold text-white hover:bg-blue-800">Fechar OS</button>}</div>)}</div> : <p className="mt-4 text-xs text-slate-500">Nenhuma OS em andamento para este setor.</p>}
         </div>
       </section>
-      {canCloseOrder && closingOrder && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-7"><h2 id="close-order-title" className="text-lg font-bold text-slate-900">Fechar {closingOrder.order}</h2><p className="mt-1 text-xs text-slate-500">Informe a quantidade que sobrou para cada material. Use 0 quando não houver sobra.</p><div className="mt-5 space-y-3">{closingOrder.items.split(";").map((entry, index) => <label key={`${closingOrder.id}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"><span className="text-xs text-slate-700">{entry.trim()}</span><input aria-label={`Quantidade sobrante: ${entry.trim()}`} type="number" min="0" value={leftovers[String(index)] ?? "0"} onChange={(event) => setLeftovers((current) => ({ ...current, [String(index)]: event.target.value }))} className="h-10 w-20 rounded-md border border-slate-200 px-2 text-center text-sm"/></label>)}</div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setClosingOrder(null)} className="min-h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700">Cancelar</button><button type="button" onClick={() => { updateRequestStatus(closingOrder.id, "Concluído", Object.values(leftovers).join(",")); setClosingOrder(null); }} className="min-h-10 rounded-lg bg-[#0B57D0] px-4 text-sm font-semibold text-white">Salvar sobras e fechar</button></div></section></div>}
+      {canCloseOrder && closingOrder && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-7"><h2 id="close-order-title" className="text-lg font-bold text-slate-900">Fechar {closingOrder.order}</h2><p className="mt-1 text-xs text-slate-500">Informe a quantidade que sobrou para cada material. Use 0 quando não houver sobra.</p><div className="mt-5 space-y-3">{closingOrder.items.split(";").map((entry, index) => <label key={`${closingOrder.id}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3"><span className="text-xs text-slate-700">{entry.trim()}</span><input aria-label={`Quantidade sobrante: ${entry.trim()}`} type="number" min="0" value={leftovers[String(index)] ?? "0"} onChange={(event) => setLeftovers((current) => ({ ...current, [String(index)]: event.target.value }))} className="h-10 w-20 rounded-md border border-slate-200 px-2 text-center text-sm"/></label>)}</div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setClosingOrder(null)} className="min-h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700">Cancelar</button><button type="button" onClick={closeOrderWithLeftovers} className="min-h-10 rounded-lg bg-[#0B57D0] px-4 text-sm font-semibold text-white">Salvar sobras e fechar OS</button></div></section></div>}
 
       {!isWarehouse && <section aria-label="Avisos do almoxarifado" className="mb-7">
         <div className="mb-3 flex items-center gap-2"><Bell size={15} className="text-amber-700"/><h2 className="text-sm font-semibold text-slate-900">Avisos do almoxarifado</h2><span className="text-[11px] text-slate-400">{unreadSectorMessages.length}</span></div>

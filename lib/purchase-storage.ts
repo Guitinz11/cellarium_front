@@ -1,3 +1,5 @@
+import { receiveInventoryPurchase } from "@/lib/inventory-storage";
+
 export interface PurchaseItemInput {
   material: string;
   code: string;
@@ -46,6 +48,15 @@ export function getPurchaseRequests(): PurchaseRequestRecord[] {
   }
 }
 
+export function subscribeToPurchaseRequests(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("cellarium-purchase-requests-updated", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("cellarium-purchase-requests-updated", callback);
+  };
+}
+
 export function createPurchaseRequestBatch(input: PurchaseBatchInput): string {
   const saved = getPurchaseRequests();
   const batchId = `COMP-${Date.now()}`;
@@ -70,4 +81,17 @@ export function createPurchaseRequestBatch(input: PurchaseBatchInput): string {
 
 export function findPurchaseBatchForRequestItem(requestId: string, code: string): string | undefined {
   return getPurchaseRequests().find((request) => request.requestId === requestId && request.code === code)?.batchId;
+}
+
+export function receivePurchaseBatch(batchId: string) {
+  const saved = getPurchaseRequests();
+  const batch = saved.filter((request) => request.batchId === batchId && request.status === "Pendente");
+  if (!batch.length) return false;
+
+  receiveInventoryPurchase(batchId, batch);
+  window.localStorage.setItem(purchaseRequestsKey, JSON.stringify(saved.map((request) =>
+    request.batchId === batchId ? { ...request, status: "Recebido" } : request,
+  )));
+  window.dispatchEvent(new Event("cellarium-purchase-requests-updated"));
+  return true;
 }
