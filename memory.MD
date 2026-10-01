@@ -119,3 +119,48 @@
 - O request store é demonstrativo/local. Alterações no `localStorage` não sincronizam entre usuários/navegadores e não fornecem concorrência ou autorização de servidor.
 - `updateRequestStatus` persiste overrides de dados mock junto com requisições submetidas; `getAllRequests` deve deduplicar por ID favorecendo o registro persistido.
 - Antes de concluir mudanças de interface, rodar `npm run lint` conforme orientação do repositório. Não afirmar que verificou visualmente sem abrir a aplicação.
+
+## Progresso adicional (2026-10-01)
+
+### Persistência sem backend
+
+- O usuário pediu que o site funcione sem APIs, backend ou banco de dados. Manter o comportamento no navegador via `localStorage`; funciona entre abas no mesmo navegador/origem, não entre dispositivos ou perfis diferentes.
+- `lib/request-storage.ts` persiste requisições em `cellarium-submitted-requests`, combina dados mock e enviados, e emite `cellarium-requests-updated`. `components/warehouse-queue.tsx` acompanha a mesma fonte; o fluxo foi testado entre funcionário e almoxarife.
+- A tela de Compras persiste lotes em `cellarium-purchase-requests`. `lib/inventory-storage.ts` guarda os saldos recebidos em `cellarium-inventory-state`; `components/inventory-page.tsx` tem a aba **A receber**, que registra o lote e soma quantidades ao inventário sem duplicar um lote já recebido.
+
+### Estado da OS e confirmação de entrega
+
+- A confirmação do almoxarife não deve concluir a OS. `deliveryConfirmed?: boolean` é independente de `status`; confirmar a entrega em `components/warehouse.tsx` chama `confirmRequestDelivery` em `lib/request-storage.ts`, preservando `Em andamento`.
+- O funcionário só pode fechar a OS depois de `deliveryConfirmed === true`. Em `components/sector-stock.tsx`, o modal de fechamento registra sobras, incrementa os saldos por código de material e setor e então muda o status para `Concluído`.
+- `marcon-sector-stock-v2.closedRequestIds` protege contra somar as mesmas sobras novamente após reabrir a tela. O setor da tela do funcionário deriva de `getRequesterSector`; o almoxarife continua usando seu seletor de setor.
+- `components/request-search.tsx` mostra “Entrega confirmada pelo almoxarife”. `components/sector-stock.tsx` mostra estado de espera/confirmado e só apresenta “Fechar OS e registrar sobras” após a confirmação.
+- Testes de navegador confirmaram: sem confirmação não há ação de fechar; após confirmar, o acompanhamento mostra o aviso e Meu estoque libera o modal; fechar com sobra alterou `CS-001` de 30 para 31 e permaneceu após recarga.
+
+### Notificações do funcionário
+
+- `/notificacoes` usa `components/employee-notifications.tsx`; além dos avisos setoriais, acompanha `getAllRequests` e mostra, por `employeeCode`, notificações de `Em andamento` e `deliveryConfirmed`.
+- IDs de status são `${request.id}:in-progress` e `${request.id}:delivery-confirmed`; leitura é guardada com o escopo `employee:<código>` em `cellarium-read-notifications:<scope>`. Marcar como lida remove o cartão e reduz o contador.
+- O fluxo foi testado com `REQ-2051`: após o almoxarife aceitar, o funcionário recebeu “Requisição em andamento”; após confirmar entrega, recebeu “Entrega confirmada pelo almoxarife”. Marcar a primeira como lida a removeu.
+- Ao enviar uma requisição, `components/request-form.tsx` redireciona ao chat com `submitted=1`; `components/request-chat.tsx` informa que está aguardando aprovação e depois troca a mensagem para aprovada/em andamento, sem afirmar aprovação prematura.
+
+### Catálogo e leitores QR
+
+- Os códigos de produto nas etiquetas das imagens são numéricos. `lib/mock-data.ts` contém os 14 produtos/códigos transcritos; conferir o nome impresso se os dados forem revisados.
+- `lib/product-code.ts` identifica código simples, URL ou JSON. `components/product-qr-picker.tsx` é compartilhado: no perfil do funcionário bloqueia material com saldo zero, adiciona o disponível à requisição e oferece “Escanear outro produto” sem perder seleção; no modo `purchase`, permite pedir reposição de item indisponível.
+- `/qrcode` preserva validação de requisição e também gera compra por QR com justificativa genérica. Existe ainda QR para compras durante separação em `components/automatic-purchase-request.tsx`.
+- Observação importante: depois que o usuário pediu para habilitar QR por produto, a antiga nota “não usar QR Code para o pedido de material” ficou obsoleta. O fluxo atual está implementado e validado; conservar a observação histórica, mas seguir este estado mais recente.
+
+### Outras alterações recentes
+
+- `components/purchase-cart.tsx` tem “Preencher sugestão” para o motivo genérico editável.
+- Em `components/request-form.tsx`, as opções de turno são Manhã, Tarde e Noite.
+- `components/request-chat.tsx` mostra status de envio/aprovação e usa fundo sólido na área de mensagens para evitar a aparência de overlay escuro.
+- No catálogo do funcionário, o atalho de rolagem e o avanço para o pedido são ações distintas; o botão flutuante sobreposto foi removido.
+- Em `components/warehouse.tsx`, “Confirmar entrega” agora persiste o estado e mostra “Entrega confirmada”, sem navegar para o histórico nem concluir a OS.
+
+### Validação e ambiente
+
+- O fluxo local completo foi validado na build de produção: funcionário envia requisição, almoxarife aceita/confirma, notificações aparecem e o funcionário fecha a OS com sobras.
+- Porta `3000` já estava ocupada por um processo Next.js e a tentativa de `npm run dev` falhou ao detectar outro servidor. Para testes, a build foi servida em `http://localhost:3002` usando `$env:PORT = '3002'; npm run start`. Reiniciar esse servidor após `npm run build` para testar alterações novas.
+- `npm run build` passou nas últimas alterações verificadas. O lint global mantém avisos de código não utilizado em `QueuePage` (`components/warehouse.tsx`) e `processProductCodeInput` (`components/automatic-purchase-request.tsx`); não remover sem avaliar mudanças locais do usuário.
+- Antes de editar `components/automatic-purchase-request.tsx`, reler seu conteúdo: o usuário avisou que houve alterações externas nesse arquivo.
