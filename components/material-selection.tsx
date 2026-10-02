@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRight, Boxes, Cable, Check, CircleDot, Drill, Layers3, Package, Search, SlidersHorizontal, Wrench, X } from "lucide-react";
 import { materialsCatalog } from "@/lib/mock-data";
 import ProductQrPicker from "@/components/product-qr-picker";
@@ -110,6 +110,7 @@ export default function MaterialSelection() {
 
   const categories = useMemo(() => [...new Set(catalog.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "pt-BR")), [catalog]);
   const units = useMemo(() => [...new Set(catalog.map((item) => item.unit))].sort((a, b) => a.localeCompare(b, "pt-BR")), [catalog]);
+  const quantitiesByCode = useMemo(() => new Map(catalog.map((item) => [item.code, item.quantity])), [catalog]);
   const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const filteredMaterials = catalog.filter((item) => {
     const searchable = `${item.name} ${item.code} ${item.category} ${item.specification}`.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -139,20 +140,34 @@ export default function MaterialSelection() {
     setPage(1);
   }, []);
 
+  useEffect(() => {
+    setSelectedMaterials((current) => {
+      let changed = false;
+      const next: Record<string, number> = {};
+      Object.entries(current).forEach(([code, quantity]) => {
+        const available = quantitiesByCode.get(code) ?? 0;
+        if (available <= 0) { changed = true; return; }
+        next[code] = Math.min(available, Math.max(1, quantity));
+        if (next[code] !== quantity) changed = true;
+      });
+      return changed ? next : current;
+    });
+  }, [quantitiesByCode]);
+
   const toggleMaterial = useCallback((code: string, checked: boolean) => {
-    if (checked && (catalog.find((item) => item.code === code)?.quantity ?? 0) <= 0) return;
+    if (checked && (quantitiesByCode.get(code) ?? 0) <= 0) return;
     setSelectedMaterials((current) => {
       const next = { ...current };
       if (checked) next[code] = next[code] ?? 1;
       else delete next[code];
       return next;
     });
-  }, [catalog]);
+  }, [quantitiesByCode]);
 
   const updateQuantity = useCallback((code: string, quantity: number) => {
-    const available = catalog.find((item) => item.code === code)?.quantity ?? 1;
+    const available = quantitiesByCode.get(code) ?? 1;
     setSelectedMaterials((current) => ({ ...current, [code]: Math.min(available, Math.max(1, quantity)) }));
-  }, [catalog]);
+  }, [quantitiesByCode]);
 
   const selectScannedMaterial = useCallback((material: CatalogMaterial) => {
     setSelectedMaterials((current) => ({ ...current, [material.code]: current[material.code] ?? 1 }));
