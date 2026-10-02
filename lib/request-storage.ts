@@ -9,6 +9,7 @@ export type RequestRecord = (typeof requests)[number] & {
 
 const submittedRequestsKey = "cellarium-submitted-requests";
 const hiddenExampleOrders = new Set(["OS-819", "OS-823"]);
+const serverRequests = requests.filter((request) => !hiddenExampleOrders.has(request.order));
 let cachedSignature = "";
 let cachedRequests: RequestRecord[] = requests;
 
@@ -44,7 +45,7 @@ export function getAllRequests(): RequestRecord[] {
 }
 
 export function getServerRequests(): RequestRecord[] {
-  return requests.filter((request) => !hiddenExampleOrders.has(request.order));
+  return serverRequests;
 }
 
 export function subscribeToRequests(callback: () => void) {
