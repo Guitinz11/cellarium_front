@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Activity, ArrowRight, Boxes, Building2, Check, CheckSquare, ChevronDown, ClipboardList, Eye, FileSpreadsheet, FileText, Package, Plus, QrCode, Search, ShieldCheck, SlidersHorizontal, Truck, UserRound, X } from "lucide-react";
+import { Activity, ArrowRight, Boxes, Building2, Check, CheckSquare, ClipboardList, Eye, FileSpreadsheet, FileText, Package, Plus, QrCode, Search, ShieldCheck, Truck, UserRound, X } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import InventoryScreen from "@/components/inventory-page";
 import RequestChat from "@/components/request-chat";
 import PurchaseRequest from "@/components/purchase-request";
 import PurchaseCart from "@/components/purchase-cart";
+import ProductQrPicker from "@/components/product-qr-picker";
 import RequestSubmissionForm from "@/components/request-form";
 import RequestSearch from "@/components/request-search";
 import EmployeeNotifications from "@/components/employee-notifications";
-import ProductQrPicker from "@/components/product-qr-picker";
+import MaterialSelection from "@/components/material-selection";
 import SectorStockPage from "@/components/sector-stock";
 import WarehouseProfileScreen from "@/components/warehouse-profile";
 import WarehouseQueue from "@/components/warehouse-queue";
@@ -106,100 +107,6 @@ function Dashboard() { return <OperationsDashboard/>; }
 
 function FormField({ label, placeholder, type = "text" }: { label: string; placeholder: string; type?: string }) { return <label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">{label}</span><input type={type} placeholder={placeholder} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label>; }
 
-function MaterialSelection() {
-  const inventoryItems = useInventoryItems();
-  const availableCatalog = materialsCatalog.map((material) => ({
-    ...material,
-    quantity: inventoryItems.find((item) => item.code === material.code)?.quantity ?? 0,
-  }));
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Todas");
-  const [availability, setAvailability] = useState("Todos");
-  const [unit, setUnit] = useState("Todas");
-  const [page, setPage] = useState(1);
-  const [selectedMaterials, setSelectedMaterials] = useState<Record<string, number>>({});
-  const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const categories = [...new Set(availableCatalog.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const units = [...new Set(availableCatalog.map((item) => item.unit))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const filteredMaterials = availableCatalog.filter((item) => {
-    const searchable = `${item.name} ${item.code} ${item.category} ${item.specification}`.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const status = item.quantity <= 0 ? "Indisponível" : item.quantity <= item.minimum ? "Crítico" : "Disponível";
-    return searchable.includes(normalizedSearch) && (category === "Todas" || item.category === category) && (availability === "Todos" || status === availability) && (unit === "Todas" || item.unit === unit);
-  });
-  const pageSize = 12;
-  const pageCount = Math.max(1, Math.ceil(filteredMaterials.length / pageSize));
-  const visibleMaterials = filteredMaterials.slice((page - 1) * pageSize, page * pageSize);
-  const selectedEntries = Object.entries(selectedMaterials);
-  const query = new URLSearchParams();
-  selectedEntries.forEach(([code, quantity]) => { query.append("material", code); query.append("qty", String(quantity)); });
-  const hasFilters = Boolean(search || category !== "Todas" || availability !== "Todos" || unit !== "Todas");
-
-  function toggleMaterial(code: string, checked: boolean) {
-    if (checked && (availableCatalog.find((item) => item.code === code)?.quantity ?? 0) <= 0) return;
-    setSelectedMaterials((current) => {
-      const next = { ...current };
-      if (checked) next[code] = next[code] ?? 1;
-      else delete next[code];
-      return next;
-    });
-  }
-
-  function updateQuantity(code: string, quantity: number) {
-    const available = Math.max(availableCatalog.find((item) => item.code === code)?.quantity ?? 1, 1);
-    setSelectedMaterials((current) => ({ ...current, [code]: Math.min(available, Math.max(1, quantity || 1)) }));
-  }
-
-  function selectScannedMaterial(material: (typeof materialsCatalog)[number]) {
-    setSelectedMaterials((current) => ({ ...current, [material.code]: current[material.code] ?? 1 }));
-    setSearch(material.code);
-    setCategory("Todas");
-    setAvailability("Todos");
-    setUnit("Todas");
-    setPage(1);
-  }
-
-  function clearFilters() {
-    setSearch(""); setCategory("Todas"); setAvailability("Todos"); setUnit("Todas"); setPage(1);
-  }
-
-  return <>
-    <PageHeading eyebrow="Requisitante · Materiais" title="Selecione os materiais" description="Encontre itens do almoxarifado, refine a lista e informe as quantidades." action={<a href="#continuar-pedido" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-brand transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"><ChevronDown size={15}/>Ir até continuar pedido</a>} />
-    <Card className="max-w-6xl border-slate-300 shadow-md">
-      <div className="catalog-toolbar">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-base font-bold">Catálogo do almoxarifado</h2><p className="mt-1 text-xs text-slate-300">Pesquise por descrição, código, categoria ou especificação.</p></div>
-          <div className="flex items-center gap-2"><ProductQrPicker onSelect={selectScannedMaterial} materials={availableCatalog}/><span className="catalog-count">{filteredMaterials.length} {filteredMaterials.length === 1 ? "item" : "itens"}</span></div>
-        </div>
-        <div className="catalog-controls">
-          <label className="flex h-11 items-center gap-2.5 rounded-lg border border-white/20 bg-white px-3 text-slate-500 shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"><Search size={16} /><span className="sr-only">Pesquisar material</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Nome, código ou especificação" className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-900 outline-none placeholder:text-slate-500" /></label>
-          <button type="button" onClick={() => setFiltersOpen((current) => !current)} aria-expanded={filtersOpen} aria-controls="catalog-filter-fields" className="catalog-filter-toggle ui-button ui-button--secondary"><SlidersHorizontal size={15}/>Filtros</button>
-          <div id="catalog-filter-fields" className={`catalog-filter-fields ${filtersOpen ? "is-open" : ""}`}>
-          <label className="relative"><span className="sr-only">Filtrar por categoria</span><SlidersHorizontal size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><select aria-label="Filtrar por categoria" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="h-11 w-full appearance-none rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-xs font-semibold text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><option value="Todas">Todas as categorias</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label><span className="sr-only">Filtrar por disponibilidade</span><select aria-label="Filtrar por disponibilidade" value={availability} onChange={(event) => { setAvailability(event.target.value); setPage(1); }} className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><option value="Todos">Qualquer disponibilidade</option><option>Disponível</option><option>Crítico</option><option>Indisponível</option></select></label>
-          <label><span className="sr-only">Filtrar por unidade</span><select aria-label="Filtrar por unidade de medida" value={unit} onChange={(event) => { setUnit(event.target.value); setPage(1); }} className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><option value="Todas">Todas as unidades</option>{units.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          </div>
-        </div>
-        {hasFilters && <button type="button" onClick={clearFilters} className="mt-3 min-h-9 rounded-md text-xs font-semibold text-slate-500 transition hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">Limpar filtros</button>}
-      </div>
-      <div className="catalog-list">
-        {visibleMaterials.length ? visibleMaterials.map((item) => {
-          const selected = selectedMaterials[item.code] !== undefined;
-          const status = item.quantity <= 0 ? "Indisponível" : item.quantity <= item.minimum ? "Crítico" : "Disponível";
-          const badge = status === "Indisponível" ? "bg-slate-100 text-slate-600" : status === "Crítico" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700";
-          return <div key={item.code} className={`catalog-row grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-4 ${selected ? "is-selected" : ""}`}>
-            <label className={`flex min-h-11 min-w-11 items-center justify-center ${item.quantity > 0 || selected ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`} aria-label={`Selecionar ${item.name}`}><input type="checkbox" checked={selected} disabled={item.quantity <= 0 && !selected} onChange={(event) => toggleMaterial(item.code, event.target.checked)} className="h-5 w-5 rounded accent-brand" /></label>
-            <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="catalog-material-name text-slate-950">{item.name}</p><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${badge}`}>{status}</span></div><p className="catalog-specification mt-1 text-slate-600">{item.specification}</p><div className="catalog-meta"><span className="catalog-code font-mono">{item.code}</span><span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-800">{item.category}</span><span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-700">{item.quantity} {item.unit} disponíveis</span></div></div>
-            {selected && <label className="col-span-2 flex items-center justify-end gap-2 rounded-lg bg-slate-50 p-2 sm:col-span-1"><span className="text-xs font-bold text-slate-700">Quantidade</span><input aria-label={`Quantidade de ${item.name}`} type="number" min={1} max={Math.max(item.quantity, 1)} value={selectedMaterials[item.code]} onChange={(event) => updateQuantity(item.code, Number(event.target.value))} className="h-11 w-20 rounded-lg border-2 border-blue-200 bg-white px-2 text-center text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>}
-          </div>;
-        }) : <div className="px-5 py-14 text-center"><Package size={26} className="mx-auto text-slate-300" /><p className="mt-3 text-sm font-semibold text-slate-700">Nenhum material encontrado</p><p className="mt-1 text-xs text-slate-500">Ajuste a busca ou os filtros para ver outros itens.</p>{hasFilters && <button type="button" onClick={clearFilters} className="mt-4 text-xs font-semibold text-brand hover:underline">Limpar filtros</button>}</div>}
-      </div>
-      {filteredMaterials.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-3 sm:px-6"><p className="text-xs font-medium text-slate-600">Exibindo {Math.min((page - 1) * pageSize + 1, filteredMaterials.length)}–{Math.min(page * pageSize, filteredMaterials.length)} de {filteredMaterials.length}</p><div className="flex items-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">Anterior</button><span className="px-1 text-xs font-bold tabular-nums text-slate-700">{page} / {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="min-h-9 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">Próxima</button></div></div>}
-      <div id="continuar-pedido" className="catalog-selection flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><p role="status" className="text-xs font-medium text-slate-700">{selectedEntries.length ? <><strong className="mr-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-700 px-1.5 text-xs font-bold text-white">{selectedEntries.length}</strong> {selectedEntries.length === 1 ? "material selecionado" : "materiais selecionados"} · quantidades preservadas ao filtrar</> : "Selecione os itens desejados e informe a quantidade de cada um."}</p><Link aria-disabled={!selectedEntries.length} tabIndex={selectedEntries.length ? 0 : -1} href={selectedEntries.length ? `/pedido?${query.toString()}` : "/materiais"} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition ${selectedEntries.length ? "bg-brand text-white hover:bg-brand-strong" : "pointer-events-none bg-slate-300 text-slate-700"}`}>Continuar pedido <ArrowRight size={16} /></Link></div>
-    </Card>
-    <p className="mt-3 max-w-6xl text-[11px] text-slate-400">Catálogo de demonstração. As quantidades e os níveis de estoque são ilustrativos; os filtros seguem as categorias e unidades cadastradas no banco.</p>
-  </>;
-}
 function RequestForm() { const searchParams = useSearchParams(); const selectedCodes = searchParams.getAll("material"); const quantities = searchParams.getAll("qty"); const selectedItems = selectedCodes.map((code, index) => ({ item: materialsCatalog.find((product) => product.code === code), quantity: Number(quantities[index]) || 1 })).filter((entry) => entry.item); return <><PageHeading eyebrow="Requisitante - Materiais" title="Nova requisição" description="Preencha os dados para solicitar materiais ao almoxarifado." action={<Link href="/materiais" className="text-xs font-semibold text-brand hover:underline">Trocar material</Link>}/><div data-reveal-group className="grid gap-5 lg:grid-cols-[1.5fr_1fr]"><Card className="p-5 sm:p-7"><div className="mb-6 border-b border-slate-100 pb-4"><h2 className="text-sm font-bold text-slate-900">Dados da solicitação</h2><p className="mt-1 text-xs text-slate-500">Os campos com * são obrigatórios.</p></div><div className="grid gap-5 sm:grid-cols-2"><FormField label="Nome do solicitante *" placeholder="Ex.: José Alencar"/><FormField label="Ordem de serviço *" placeholder="Ex.: OS-821"/><label className="block"><span className="mb-2 block text-xs font-semibold text-slate-700">Setor *</span><select defaultValue="" className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700"><option value="">Selecione o setor</option>{sectors.map((sector) => <option key={sector} value={sector}>{sector}</option>)}</select></label><FormField label="Data necessária *" placeholder="dd/mm/aaaa" type="date"/></div><div className="mt-6"><div className="mb-3 flex items-center justify-between"><h3 className="text-xs font-bold text-slate-800">Material solicitado</h3><Link href="/materiais" className="text-xs font-semibold text-brand hover:underline">Escolher outro</Link></div><div className="space-y-2">{selectedItems.length ? selectedItems.map(({ item, quantity }) => item && <div key={item.code} className="grid grid-cols-[minmax(0,1fr)_100px] items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-3"><div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1 font-mono text-[10px] text-slate-500">{item.code}</p></div><p className="text-right text-xs font-semibold text-slate-700">Qtd.: {quantity}</p></div>) : <div className="rounded-lg border border-dashed border-slate-300 p-4 text-xs text-slate-500">Nenhum material selecionado. <Link href="/materiais" className="font-semibold text-brand">Escolher materiais</Link></div>}</div></div><label className="mt-5 block"><span className="mb-2 block text-xs font-semibold text-slate-700">Observações</span><textarea rows={3} placeholder="Descreva a aplicação ou informações adicionais..." className="w-full resize-y rounded-lg border border-slate-200 p-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/></label><div className="mt-6 flex flex-col-reverse justify-end gap-3 border-t border-slate-100 pt-5 sm:flex-row"><Link href="/materiais" className="ui-button ui-button--secondary w-full sm:w-auto">Voltar à seleção</Link><Link href="/acompanhar" className="ui-button ui-button--primary w-full sm:w-auto">Enviar requisição <ArrowRight size={16}/></Link></div></Card><Card className="h-fit p-5"><div className="flex items-start gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-brand"><ShieldCheck size={18}/></div><div><h3 className="text-sm font-bold text-slate-900">Antes de solicitar</h3><p className="mt-1 text-xs leading-5 text-slate-500">Confira as informações para agilizar a separação dos materiais.</p></div></div><ul className="mt-5 space-y-4 text-xs text-slate-600"><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Tenha a ordem de serviço em mãos.</li><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Informe a quantidade necessária para o serviço.</li><li className="flex gap-2"><Check size={15} className="shrink-0 text-emerald-600"/>Acompanhe o andamento pela tela de acompanhamento.</li></ul></Card></div></> }
 
 function TrackingPage() { return <><PageHeading eyebrow="Requisitante - Acompanhamento" title="Acompanhar pedido" description="Consulte o andamento da sua requisição." action={<Button variant="secondary"><Search size={15}/>Buscar pedido</Button>}/><div data-reveal-group className="grid gap-5 lg:grid-cols-[1.3fr_1fr]"><Card className="p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5"><div><p className="font-mono text-xs font-bold text-brand">REQ-2045</p><h2 className="mt-2 text-lg font-bold text-slate-900">Disco de Corte para Aço Carbono 4.1/2&quot; x 1.0mm - 12 un.</h2><p className="mt-1 text-xs text-slate-500">OS-819 - Usinagem e Solda - Solicitado em 24/10/2024</p></div><StatusBadge status="Em andamento"/></div><h3 className="mb-5 mt-6 text-xs font-bold text-slate-800">Etapas do pedido</h3><div data-reveal-group className="space-y-0">{[{ title: "Requisição enviada", time: "Hoje, 08:42 - José Alencar", done: true },{ title: "Pedido aceito pelo almoxarife", time: "Hoje, 09:15 - Carlos Silva", done: true },{ title: "Separação dos materiais", time: "Em andamento", active: true },{ title: "Retirada disponível", time: "Aguardando conclusão" }].map((step, i) => <div data-reveal-item key={step.title} className="relative flex gap-4 pb-7 last:pb-0"><div className="relative flex w-6 shrink-0 justify-center"><span className={`z-10 flex h-6 w-6 items-center justify-center rounded-full ${step.done ? "bg-emerald-100 text-emerald-700" : step.active ? "bg-blue-100 text-brand" : "bg-slate-100 text-slate-400"}`}>{step.done ? <Check size={13}/> : <span className="h-2 w-2 rounded-full bg-current"/>}</span>{i < 3 && <span className={`absolute top-6 h-full w-px ${step.done ? "bg-emerald-200" : "bg-slate-200"}`}/>}</div><div><p className={`text-xs font-semibold ${step.active ? "text-brand" : step.done ? "text-slate-800" : "text-slate-400"}`}>{step.title}</p><p className="mt-1 text-[11px] text-slate-400">{step.time}</p></div></div>)}</div></Card><Card className="h-fit p-5"><h2 className="text-sm font-bold text-slate-900">Resumo do pedido</h2><div className="mt-4 space-y-3 text-xs"><div className="flex justify-between"><span className="text-slate-500">Solicitante</span><span className="font-medium text-slate-800">José Alencar</span></div><div className="flex justify-between"><span className="text-slate-500">Setor</span><span className="font-medium text-slate-800">Usinagem e Solda</span></div><div className="flex justify-between"><span className="text-slate-500">Ordem de serviço</span><span className="font-mono font-medium text-slate-800">OS-819</span></div></div><div className="mt-5 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-800">Seu pedido está sendo separado. Você receberá uma atualização quando estiver disponível para retirada.</div></Card></div></> }
