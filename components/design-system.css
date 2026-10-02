@@ -177,12 +177,14 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .catalog-results-heading span { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .catalog-list { display: grid; gap: 9px; }
 .catalog-card { display: grid; min-width: 0; min-height: 104px; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 15px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface-raised); transition: transform 160ms var(--ease-out), border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease; }
+.catalog-card-enter { min-width: 0; }
 .catalog-card.is-selected { border-color: color-mix(in srgb, var(--brand) 40%, var(--line)); background: color-mix(in srgb, var(--brand-soft) 65%, var(--surface)); }
 .catalog-card.is-unavailable { opacity: .78; }
 .catalog-card-select { position: relative; display: grid; min-width: 0; grid-template-columns: 22px 42px minmax(0, 1fr); align-items: center; gap: 13px; cursor: pointer; }
 .catalog-card-select input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .catalog-checkmark { display: flex; width: 22px; height: 22px; align-items: center; justify-content: center; border: 1.5px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: white; }
 .catalog-card-select input:checked + .catalog-checkmark { border-color: var(--brand); background: var(--brand); }
+.dark .catalog-card-select input:checked + .catalog-checkmark { border-color: var(--action); background: var(--action); }
 .catalog-card-select input:focus-visible + .catalog-checkmark { outline: 3px solid color-mix(in srgb, var(--brand) 50%, transparent); outline-offset: 3px; }
 .catalog-card-select input:disabled + .catalog-checkmark { border-color: var(--line); background: var(--surface-soft); }
 .catalog-card-icon { display: flex; width: 42px; height: 42px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 10px; background: var(--surface-soft); color: var(--brand); }
@@ -211,6 +213,11 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .catalog-empty p { margin: 6px 0 13px; font-size: 11px; }
 .catalog-disclaimer { margin-top: 18px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .catalog-card-title, .catalog-card-specification { overflow-wrap: anywhere; }
+.catalog-loading { min-height: 70vh; }
+.catalog-loading-summary { display: flex; gap: 18px; margin: 24px 0; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.catalog-loading-list { display: grid; gap: 9px; }
+.catalog-loading-card { display: grid; min-height: 104px; grid-template-columns: 22px 42px minmax(0, 1fr); align-items: center; gap: 13px; padding: 15px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface-raised); }
+.catalog-loading-copy { display: grid; gap: 8px; }
 .catalog-sheet-backdrop { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center; background: rgb(12 20 34 / 48%); }
 .catalog-sheet { width: min(100%, 560px); padding: 10px 22px max(22px, env(safe-area-inset-bottom)); border: 1px solid var(--line); border-bottom: 0; border-radius: 20px 20px 0 0; background: var(--surface); box-shadow: var(--shadow-popover); }
 .catalog-sheet-handle { width: 38px; height: 4px; margin: 0 auto 16px; border-radius: 4px; background: var(--line-strong); }
@@ -227,6 +234,12 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .catalog-selection-bar p span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 400; }
 .catalog-selection-bar .ui-button { min-height: 46px; }
 .catalog-selection-spacer { height: 88px; }
+@media (prefers-reduced-motion: no-preference) {
+  .catalog-card-enter { animation: catalog-card-enter 340ms var(--ease-out) both; animation-delay: calc(var(--catalog-index, 0) * 24ms); }
+  .catalog-selection-bar { animation: catalog-selection-enter 230ms var(--ease-out) both; }
+}
+@keyframes catalog-card-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes catalog-selection-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 /* Existing brand asset and video remain part of the login composition. */
 .login-shell { background: var(--surface); } .login-showcase { background: #152844; color: #fff; }
 .login-showcase-content { min-height: 170px; }
@@ -282,13 +295,18 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
 }
 @media (max-width: 767px) {
   /* Reserve the Next.js development launcher footprint without hiding the issue indicator. */
-  body:has(nextjs-portal) .requester-nav { padding-left: 54px; }
+  body:has(nextjs-portal) .requester-nav { padding-left: 60px; }
 }
 @media (max-width: 639px) {
   .shell-breadcrumb > span, .shell-breadcrumb > svg { display: none; } .metrics-strip { grid-template-columns: 1fr; }
   .ui-metric { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 14px; padding: 17px 20px; } .ui-metric + .ui-metric { border-left: 0; border-top: 1px solid var(--line); } .ui-metric-value { grid-row: 1 / 3; grid-column: 2; margin-top: 0; font-size: 26px; } .ui-metric-note { margin-top: 0; font-size: 10px; }
   .operations-hero { padding: 24px; } .operations-hero .ui-button { width: 100%; } .panel-heading { padding: 20px; } .priority-row { flex-wrap: wrap; padding: 16px 20px; } .priority-row-body { flex-basis: 160px; } .critical-row { padding: 15px 20px; }
   .catalog-page { padding: 20px 14px 18px; border: 0; border-radius: 0; box-shadow: none; }
+  .page-skeleton:has(.catalog-loading) { padding: 16px; }
+  .catalog-loading-summary { justify-content: space-between; gap: 8px; }
+  .catalog-loading-summary > .skeleton { width: 27%; }
+  .catalog-loading-card { min-height: 92px; grid-template-columns: 22px minmax(0, 1fr); padding: 12px; }
+  .catalog-loading-card > .skeleton:nth-child(2) { display: none; }
   .catalog-intro { align-items: flex-start; gap: 10px; }
   .catalog-intro > div:first-child { min-width: 0; flex: 1; }
   .catalog-intro h1 { max-width: 12ch; font-size: 29px; }
@@ -304,7 +322,6 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
   .catalog-panel-heading h2 { font-size: 15px; }
   .catalog-heading-actions { max-width: 100%; flex-direction: column-reverse; align-items: flex-end; gap: 3px; margin-left: auto; }
   .catalog-qr-action > span { max-width: 92px; text-align: right; line-height: 1.3; }
-  .catalog-qr-action > span { display: none; }
   .catalog-count { font-size: 9px; }
   .catalog-toolbar { padding: 12px; }
   .catalog-search { min-height: 46px; gap: 8px; padding: 0 10px; }

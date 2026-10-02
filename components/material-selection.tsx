@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState, type CSSProperties } from "react";
 import { ArrowRight, Boxes, Cable, Check, CircleDot, Drill, Layers3, Package, Search, SlidersHorizontal, Wrench, X } from "lucide-react";
 import { materialsCatalog } from "@/lib/mock-data";
 import ProductQrPicker from "@/components/product-qr-picker";
 import { useInventoryItems } from "@/components/use-inventory-items";
 import { useDialogAccessibility } from "@/components/use-dialog-accessibility";
+import CountUp from "@/components/count-up";
 
 type CatalogMaterial = (typeof materialsCatalog)[number];
 type CatalogItem = CatalogMaterial & { quantity: number };
@@ -35,13 +36,25 @@ function getAvailability(item: CatalogItem) {
   return "Disponível";
 }
 
-function getMainSpecification(specification: string) {
-  return specification.split(/[—–;]/, 1)[0].replace(/^(espessura|diâmetro|comprimento|uso|aplicação)\s+/i, "").trim();
+function getMainSpecification(name: string, specification: string) {
+  const [primary, secondary] = specification.split(/[—–;]/, 2);
+  const main = primary.replace(/^(espessura|diâmetro|comprimento|uso|aplicação)\s+/i, "").trim();
+  const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  return normalize(main) && normalize(name).includes(normalize(main)) ? secondary?.trim() ?? "" : main;
 }
 
 function getAvailableLabel(item: CatalogItem) {
   const plural = unitPlural[item.unit] ?? `${item.unit.toLocaleLowerCase("pt-BR")}s`;
   return `${item.quantity} ${plural} disponíveis`;
+}
+
+function normalizeSelection(selection: Record<string, number>, quantitiesByCode: ReadonlyMap<string, number>) {
+  const normalized: Record<string, number> = {};
+  Object.entries(selection).forEach(([code, quantity]) => {
+    const available = quantitiesByCode.get(code) ?? 0;
+    if (available > 0) normalized[code] = Math.min(available, Math.max(1, quantity));
+  });
+  return normalized;
 }
 
 const MaterialCard = memo(function MaterialCard({
@@ -55,6 +68,7 @@ const MaterialCard = memo(function MaterialCard({
 }) {
   const status = getAvailability(item);
   const disabled = item.quantity <= 0;
+  const specification = getMainSpecification(item.name, item.specification);
 
   return (
     <article className={`catalog-card ${selected ? "is-selected" : ""} ${disabled ? "is-unavailable" : ""}`}>
@@ -71,7 +85,7 @@ const MaterialCard = memo(function MaterialCard({
         <span className="catalog-card-icon" aria-hidden="true">{getCategoryIcon(item.category)}</span>
         <span className="catalog-card-copy">
           <span className="catalog-card-title">{item.name}</span>
-          <span className="catalog-card-specification">{getMainSpecification(item.specification)}</span>
+          {specification && <span className="catalog-card-specification">{specification}</span>}
           <span className="catalog-card-meta">
             <span className="catalog-code">{item.code}</span>
             <span>{item.category}</span>
@@ -85,9 +99,9 @@ const MaterialCard = memo(function MaterialCard({
       </label>
       {selected && (
         <div className="catalog-stepper" aria-label={`Quantidade de ${item.name}`}>
-          <button type="button" aria-label={`Diminuir quantidade de ${item.name}`} onClick={() => onQuantity(item.code, quantity - 1)} disabled={quantity <= 1}>−</button>
+          <button type="button" aria-label={`Diminuir quantidade de ${item.name}`} onClick={() => onQuantity(item.code, -1)} disabled={quantity <= 1}>−</button>
           <output aria-live="polite" aria-label={`${quantity} ${item.unit}`}>{quantity}</output>
-          <button type="button" aria-label={`Aumentar quantidade de ${item.name}`} onClick={() => onQuantity(item.code, quantity + 1)} disabled={quantity >= item.quantity}>+</button>
+          <button type="button" aria-label={`Aumentar quantidade de ${item.name}`} onClick={() => onQuantity(item.code, 1)} disabled={quantity >= item.quantity}>+</button>
         </div>
       )}
     </article>
@@ -104,13 +118,14 @@ export default function MaterialSelection() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Filters>({ category: "Todas", availability: "Todos", unit: "Todas" });
   const [page, setPage] = useState(1);
-  const [selectedMaterials, setSelectedMaterials] = useState<Record<string, number>>({});
+  const [selection, setSelection] = useState<Record<string, number>>({});
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
   useDialogAccessibility(filtersOpen, closeFilters);
 
   const categories = useMemo(() => [...new Set(catalog.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "pt-BR")), [catalog]);
   const units = useMemo(() => [...new Set(catalog.map((item) => item.unit))].sort((a, b) => a.localeCompare(b, "pt-BR")), [catalog]);
   const quantitiesByCode = useMemo(() => new Map(catalog.map((item) => [item.code, item.quantity])), [catalog]);
+  const selectedMaterials = useMemo(() => normalizeSelection(selection, quantitiesByCode), [selection, quantitiesByCode]);
   const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const filteredMaterials = catalog.filter((item) => {
     const searchable = `${item.name} ${item.code} ${item.category} ${item.specification}`.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -140,41 +155,37 @@ export default function MaterialSelection() {
     setPage(1);
   }, []);
 
-  useEffect(() => {
-    setSelectedMaterials((current) => {
-      let changed = false;
-      const next: Record<string, number> = {};
-      Object.entries(current).forEach(([code, quantity]) => {
-        const available = quantitiesByCode.get(code) ?? 0;
-        if (available <= 0) { changed = true; return; }
-        next[code] = Math.min(available, Math.max(1, quantity));
-        if (next[code] !== quantity) changed = true;
-      });
-      return changed ? next : current;
-    });
-  }, [quantitiesByCode]);
-
   const toggleMaterial = useCallback((code: string, checked: boolean) => {
     if (checked && (quantitiesByCode.get(code) ?? 0) <= 0) return;
-    setSelectedMaterials((current) => {
-      const next = { ...current };
+    setSelection((current) => {
+      const next = normalizeSelection(current, quantitiesByCode);
       if (checked) next[code] = next[code] ?? 1;
       else delete next[code];
       return next;
     });
   }, [quantitiesByCode]);
 
-  const updateQuantity = useCallback((code: string, quantity: number) => {
-    const available = quantitiesByCode.get(code) ?? 1;
-    setSelectedMaterials((current) => ({ ...current, [code]: Math.min(available, Math.max(1, quantity)) }));
+  const updateQuantity = useCallback((code: string, change: number) => {
+    const available = quantitiesByCode.get(code) ?? 0;
+    setSelection((current) => {
+      const next = normalizeSelection(current, quantitiesByCode);
+      if (available <= 0) { delete next[code]; return next; }
+      const currentQuantity = next[code] ?? 1;
+      next[code] = Math.min(available, Math.max(1, currentQuantity + change));
+      return next;
+    });
   }, [quantitiesByCode]);
 
   const selectScannedMaterial = useCallback((material: CatalogMaterial) => {
-    setSelectedMaterials((current) => ({ ...current, [material.code]: current[material.code] ?? 1 }));
+    setSelection((current) => {
+      const next = normalizeSelection(current, quantitiesByCode);
+      if ((quantitiesByCode.get(material.code) ?? 0) > 0) next[material.code] = next[material.code] ?? 1;
+      return next;
+    });
     setSearch(material.code);
     setFilters({ category: "Todas", availability: "Todos", unit: "Todas" });
     setPage(1);
-  }, []);
+  }, [quantitiesByCode]);
 
   function clearFilters() {
     setSearch("");
@@ -200,7 +211,7 @@ export default function MaterialSelection() {
       </header>
 
       <section className="catalog-summary" aria-label="Resumo do catálogo">
-        {summary.map(({ label, value }) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}
+        {summary.map(({ label, value }) => <div key={label}><strong><CountUp value={value}/></strong><span>{label}</span></div>)}
       </section>
 
       <section className="catalog-panel" aria-labelledby="catalog-title">
@@ -227,7 +238,7 @@ export default function MaterialSelection() {
 
         <div className="catalog-results-heading"><h3>Materiais disponíveis</h3><span>{filteredMaterials.length} {filteredMaterials.length === 1 ? "resultado" : "resultados"}</span></div>
         <div className="catalog-list" aria-live="polite" aria-busy="false">
-          {visibleMaterials.length ? visibleMaterials.map((item) => <MaterialCard key={item.code} item={item} selected={selectedMaterials[item.code] !== undefined} quantity={selectedMaterials[item.code] ?? 1} onToggle={toggleMaterial} onQuantity={updateQuantity}/>) : (
+          {visibleMaterials.length ? visibleMaterials.map((item, index) => <div key={item.code} className="catalog-card-enter" style={{ "--catalog-index": index } as CSSProperties}><MaterialCard item={item} selected={selectedMaterials[item.code] !== undefined} quantity={selectedMaterials[item.code] ?? 1} onToggle={toggleMaterial} onQuantity={updateQuantity}/></div>) : (
             <div className="catalog-empty"><Package size={26} aria-hidden="true"/><h3>Nenhum material encontrado</h3><p>Ajuste a busca ou os filtros para consultar outros itens.</p>{hasFilters && <button type="button" onClick={clearFilters} className="ui-button ui-button--secondary">Limpar filtros</button>}</div>
           )}
         </div>
