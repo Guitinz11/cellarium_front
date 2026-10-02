@@ -41,10 +41,6 @@ export default function ProductQrPicker({ onSelect, purpose = "requisition", mat
       setScanError(`O código "${rawValue.trim()}" não corresponde a um produto cadastrado.`);
       return;
     }
-    if (purpose === "requisition" && material.quantity <= 0) {
-      setScanError(`${material.name} não tem unidades disponíveis no estoque e não pode ser selecionado.`);
-      return;
-    }
     handledScan.current = true;
     onSelectRef.current(material);
     setScannerOpen(false);
@@ -63,18 +59,26 @@ export default function ProductQrPicker({ onSelect, purpose = "requisition", mat
         const reader = document.getElementById("employee-product-qr-reader");
         if (!reader) return;
         scanner = new Html5Qrcode(reader.id);
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 230, height: 230 } },
-          (decodedText) => selectProduct(decodedText),
-          () => undefined,
-        );
+        const scanConfig = { fps: 12, qrbox: { width: 240, height: 240 } };
+        const onDecoded = (decodedText: string) => selectProduct(decodedText);
+        try {
+          await scanner.start({ facingMode: "environment" }, scanConfig, onDecoded, () => undefined);
+        } catch (preferredCameraError) {
+          // Some mobile browsers do not resolve `facingMode`; retry with a concrete camera ID.
+          const cameras = await Html5Qrcode.getCameras();
+          if (!cameras.length) throw preferredCameraError;
+          const rearCamera = [...cameras].reverse().find((camera) => /back|rear|environment|traseira|posterior/i.test(camera.label));
+          await scanner.start(rearCamera?.id ?? cameras[cameras.length - 1].id, scanConfig, onDecoded, () => undefined);
+        }
         if (disposed && scanner.isScanning) await scanner.stop();
         else setScanStatus("Câmera ativa. Aponte para o QR Code do produto.");
       } catch {
         if (disposed) return;
-        setScanError("Não foi possível acessar a câmera. Verifique a permissão ou informe o código do produto.");
-        setScanStatus("Leitor indisponível. Você também pode digitar o código do produto.");
+        const secureContext = window.isSecureContext || ["localhost", "127.0.0.1"].includes(window.location.hostname);
+        setScanError(secureContext
+          ? "Não foi possível iniciar a câmera. Permita o acesso no navegador e tente novamente, ou informe o código do produto."
+          : "A câmera exige uma conexão segura (HTTPS). Abra o portal por HTTPS ou informe o código do produto.");
+        setScanStatus("Câmera indisponível. Você também pode digitar o código do produto.");
       }
     })();
 
@@ -96,6 +100,6 @@ export default function ProductQrPicker({ onSelect, purpose = "requisition", mat
   return <>
     <button type="button" onClick={openScanner} className="ui-button ui-button--secondary !min-h-10 !px-3 !text-xs"><QrCode size={16}/>Solicitar via QR</button>
     {scannerOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setScannerOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="employee-product-scanner-title" className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-[11px] font-bold uppercase tracking-wide text-brand">{purpose === "purchase" ? "Reposição de estoque" : "Solicitação de materiais"}</p><h2 id="employee-product-scanner-title" className="mt-1 text-lg font-bold text-slate-900">Escanear produto</h2><p className="mt-1 text-xs leading-5 text-slate-500">{purpose === "purchase" ? "O produto lido será enviado ao setor de Compras." : "O produto lido será adicionado à sua requisição."}</p></div><button type="button" aria-label="Fechar leitor" onClick={() => setScannerOpen(false)} className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={18}/></button></div><div id="employee-product-qr-reader" className="mt-5 min-h-64 overflow-hidden rounded-lg bg-slate-950"/><p className="mt-3 text-center text-xs text-slate-500" aria-live="polite">{scanStatus}</p>{scanError && <p role="alert" className="mt-2 rounded-md bg-rose-50 p-3 text-xs leading-5 text-rose-800">{scanError}</p>}<form onSubmit={(event) => { event.preventDefault(); selectProduct(productCode); }} className="mt-4 border-t border-slate-100 pt-4"><label className="mb-2 block text-xs font-semibold text-slate-700" htmlFor="employee-manual-product-code">Ou informe o código do produto</label><div className="flex gap-2"><input id="employee-manual-product-code" value={productCode} onChange={(event) => { setProductCode(event.target.value); setScanError(""); }} placeholder="Ex.: 6687" className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm text-slate-800"/><button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong">Adicionar</button></div></form></section></div>}
-    {selectedMaterial && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-4"><section role="dialog" aria-modal="true" aria-labelledby="product-added-title" className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl"><span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><Check size={22}/></span><h2 id="product-added-title" className="mt-4 text-center text-lg font-bold text-slate-900">Produto lido e marcado</h2><p className="mt-2 text-center text-sm text-slate-700">O material foi lido pelo QR Code e marcado na sua seleção.</p><p className="mt-3 text-center text-sm font-semibold text-slate-800">{selectedMaterial.name}</p><p className="mt-1 text-center font-mono text-xs text-slate-500">{selectedMaterial.code}</p><p className="mt-5 text-center text-sm text-slate-700">Escanear outro produto?</p><div className="mt-4 grid gap-2 sm:grid-cols-2"><button type="button" onClick={openScanner} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"><QrCode size={16}/>Escanear outro produto</button><button type="button" onClick={() => setSelectedMaterial(null)} className="min-h-11 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Continuar solicitação</button></div></section></div>}
+    {selectedMaterial && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-4"><section role="dialog" aria-modal="true" aria-labelledby="product-added-title" className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl"><span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><Check size={22}/></span><h2 id="product-added-title" className="mt-4 text-center text-lg font-bold text-slate-900">Produto lido e marcado</h2><p className="mt-2 text-center text-sm text-slate-700">O material foi lido pelo QR Code e marcado na sua seleção.</p><p className="mt-3 text-center text-sm font-semibold text-slate-800">{selectedMaterial.name}</p><p className="mt-1 text-center font-mono text-xs text-slate-500">{selectedMaterial.code}</p>{selectedMaterial.quantity <= 0 && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-center text-xs leading-5 text-amber-800">Este material está sem saldo no estoque. Ele permanece selecionado para sua solicitação.</p>}<p className="mt-5 text-center text-sm text-slate-700">Escanear outro produto?</p><div className="mt-4 grid gap-2 sm:grid-cols-2"><button type="button" onClick={openScanner} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition hover:bg-brand-strong"><QrCode size={16}/>Escanear outro produto</button><button type="button" onClick={() => setSelectedMaterial(null)} className="min-h-11 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Continuar solicitação</button></div></section></div>}
   </>;
 }

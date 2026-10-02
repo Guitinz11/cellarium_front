@@ -39,7 +39,6 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 :where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 55%, transparent); outline-offset: 3px; }
 ::selection { background: var(--brand-soft); color: var(--brand); }
 .bg-white { background-color: var(--surface); } .bg-brand { background-color: var(--action); }
-.dark .brand-logo { border-radius: 2px; background: #fff; outline: 4px solid #fff; }
 .hover\:bg-brand-strong:hover { background-color: var(--action-hover); }
 .dark .bg-\[\#F4F7FB\], .dark .bg-\[\#f4f7fb\], .dark .bg-\[\#f1f5fa\] { background-color: var(--background); }
 .dark .bg-emerald-700.text-white { background-color: #286948; } .dark .hover\:bg-emerald-800:hover { background-color: #20583b; }
@@ -155,7 +154,7 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .login-shell { background: var(--surface); } .login-showcase { background: #152844; color: #fff; }
 .login-showcase-content { min-height: 170px; }
 .login-copy { position: relative; }
-.login-video-wash { position: absolute; inset: auto 0 0; height: 75%; pointer-events: none; background: linear-gradient(180deg, transparent 0%, rgb(52 76 107 / 88%) 6%, rgb(43 65 94 / 94%) 100%); transform: translateY(33.333%); }
+.login-video-wash { position: absolute; inset: auto 0 0; height: 75%; pointer-events: none; background: linear-gradient(180deg, transparent 0%, rgb(52 76 107 / 18%) 18%, rgb(52 76 107 / 56%) 36%, rgb(47 69 99 / 82%) 62%, rgb(43 65 94 / 92%) 100%); transform: translateY(33.333%); }
 .login-reveal { opacity: 1; transform: none; }
 .login-reveal-1 { --intro-text-delay: 3.1s; } .login-reveal-2 { --intro-text-delay: 3.25s; } .login-reveal-3 { --intro-text-delay: 3.4s; } .login-reveal-4 { --intro-text-delay: 3.55s; } .login-reveal-5 { --intro-text-delay: 3.7s; } .login-reveal-6 { --intro-text-delay: 3.85s; } .login-reveal-7 { --intro-text-delay: 4s; }
 @media (prefers-reduced-motion: no-preference) {

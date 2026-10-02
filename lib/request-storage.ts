@@ -8,6 +8,7 @@ export type RequestRecord = (typeof requests)[number] & {
 };
 
 const submittedRequestsKey = "cellarium-submitted-requests";
+const hiddenExampleOrders = new Set(["OS-819", "OS-823"]);
 let cachedSignature = "";
 let cachedRequests: RequestRecord[] = requests;
 
@@ -32,7 +33,7 @@ function readSubmittedRequests(): RequestRecord[] {
 }
 
 export function getAllRequests(): RequestRecord[] {
-  const submittedRequests = readSubmittedRequests();
+  const submittedRequests = readSubmittedRequests().filter((request) => !hiddenExampleOrders.has(request.order));
   const signature = JSON.stringify(submittedRequests);
   if (signature !== cachedSignature) {
     cachedSignature = signature;
@@ -43,7 +44,7 @@ export function getAllRequests(): RequestRecord[] {
 }
 
 export function getServerRequests(): RequestRecord[] {
-  return requests;
+  return requests.filter((request) => !hiddenExampleOrders.has(request.order));
 }
 
 export function subscribeToRequests(callback: () => void) {
