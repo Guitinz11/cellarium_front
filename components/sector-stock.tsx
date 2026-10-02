@@ -103,7 +103,7 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
   const requesterCode = useSyncExternalStore(subscribeToRequesterSession, getRequesterCode, getServerRequesterValue);
   const requesterSector = useSyncExternalStore(subscribeToRequesterSession, getRequesterSector, getServerRequesterValue);
   const activeSector = isWarehouse ? sector : requesterSector || sector;
-  const openOrders = requests.filter((request) => ["Em andamento", "Aprovado"].includes(request.status) && (isWarehouse || request.sector === activeSector));
+  const openOrders = requests.filter((request) => ["Em andamento", "Aprovado"].includes(request.status) && (isWarehouse || (request.employeeCode ? request.employeeCode === requesterCode : request.sector === activeSector)));
   const canCloseOrder = !isWarehouse && userRole !== "almoxarife" && (userRole === "requisitante" || Boolean(requesterCode));
 
   function updateData(update: (current: SectorStockData) => SectorStockData) {
@@ -229,15 +229,15 @@ export default function SectorStockPage({ isWarehouse = false }: { isWarehouse?:
       </section>
       {closureMessage && <p role="status" className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800"><Check size={16}/>{closureMessage}</p>}
       {canCloseOrder && closingOrder && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-        <section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl sm:p-7">
+        <section role="dialog" aria-modal="true" aria-labelledby="close-order-title" className="close-order-dialog max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-xl sm:p-7">
           <h2 id="close-order-title" className="text-lg font-bold text-slate-900">Fechar {closingOrder.order}</h2>
           <p className="mt-2 text-xs leading-5 text-slate-500">Informe as sobras de cada material. Ao confirmar, elas voltam ao saldo do setor e a OS é encerrada. Use 0 quando todo o material foi utilizado.</p>
           <form onSubmit={(event) => { event.preventDefault(); closeOrderWithLeftovers(); }}>
             <div className="mt-5 space-y-3">{closingOrder.items.split(";").map((entry, index) => {
               const maximum = Number(entry.trim().match(/·\s*(\d+(?:[,.]\d+)?)/)?.[1]?.replace(",", "."));
-              return <label key={closingOrder.id + "-" + index} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+              return <label key={closingOrder.id + "-" + index} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="min-w-0 text-xs leading-5 text-slate-700">{entry.trim()}</span>
-                <input aria-label={"Quantidade sobrante: " + entry.trim()} type="number" required min="0" max={Number.isFinite(maximum) ? maximum : undefined} step="any" value={leftovers[String(index)] ?? "0"} onChange={(event) => { setLeftovers((current) => ({ ...current, [String(index)]: event.target.value })); setClosingError(""); }} className="h-11 w-20 shrink-0 rounded-md border border-slate-200 px-2 text-center text-sm"/>
+                <input aria-label={"Quantidade sobrante: " + entry.trim()} type="number" required min="0" max={Number.isFinite(maximum) ? maximum : undefined} step="any" value={leftovers[String(index)] ?? "0"} onChange={(event) => { setLeftovers((current) => ({ ...current, [String(index)]: event.target.value })); setClosingError(""); }} className="close-order-leftover-input h-11 w-24 shrink-0 rounded-md border border-slate-300 bg-white px-2 text-center text-sm font-semibold text-slate-900 shadow-sm"/>
               </label>;
             })}</div>
             {closingError && <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{closingError}</p>}

@@ -46,6 +46,8 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 .dark .bg-slate-950\/50, .dark .bg-slate-950\/55 { background-color: rgb(4 9 16 / 65%); } .dark .bg-slate-950 { background-color: #080f19; }
 /* Fields nested in a search control keep one visible boundary. */
 input:not([type="checkbox"]):not([type="radio"])[class*="border"], select, textarea { border-color: var(--line-strong); border-radius: var(--radius-control); background-color: var(--surface); color: var(--foreground); }
+.dark .close-order-dialog { border-color: var(--line); background-color: var(--surface-raised); color: var(--foreground); }
+.dark .close-order-dialog .close-order-leftover-input { border-color: var(--line-strong); background-color: var(--surface-soft); color: var(--foreground); color-scheme: dark; }
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: .9; }
 input:read-only, select:disabled { background-color: var(--surface-soft); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--action); }
