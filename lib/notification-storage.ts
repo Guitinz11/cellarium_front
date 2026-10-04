@@ -8,16 +8,6 @@ export type SectorNotice = {
 };
 
 const sectorStockStorageKey = "marcon-sector-stock-v2";
-const initialNotices: SectorNotice[] = [
-  {
-    id: "notice-initial",
-    code: "CS-001",
-    itemName: "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm",
-    sector: "Montagem e Pintura",
-    text: "O material já está disponível no estoque do seu setor.",
-    createdAt: new Date("2026-09-25T11:30:00.000Z").getTime(),
-  },
-];
 
 function isSectorNotice(value: unknown): value is SectorNotice {
   return typeof value === "object" && value !== null &&
@@ -47,7 +37,7 @@ export function subscribeToSectorNotices(callback: () => void) {
 }
 
 export function parseSectorNotices(snapshot: string) {
-  if (!snapshot) return initialNotices;
+  if (!snapshot) return [];
   try {
     const parsed: unknown = JSON.parse(snapshot);
     if (typeof parsed !== "object" || parsed === null || !("messages" in parsed) || !Array.isArray(parsed.messages)) return [];

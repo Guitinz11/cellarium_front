@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Boxes, ClipboardList, Eye, EyeOff, Info, LockKeyhole, PackageCheck, UserRound } from "lucide-react";
+import { ArrowRight, Boxes, ClipboardList, Eye, EyeOff, LockKeyhole, PackageCheck, UserRound } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
 import { Button } from "@/components/ui";
-import { sectors } from "@/lib/mock-data";
+import { ApiError, login, listSectors, storeApiSession } from "@/lib/warehouse-api";
 
 type Profile = "funcionario" | "almoxarife";
 
@@ -16,8 +16,7 @@ export default function LoginPage() {
   const video = useRef<HTMLVideoElement>(null);
   const [profile, setProfile] = useState<Profile>("funcionario");
   const [showPassword, setShowPassword] = useState(false);
-  const [employeeCode, setEmployeeCode] = useState("");
-  const [sector, setSector] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -41,26 +40,45 @@ export default function LoginPage() {
     return () => motion.removeEventListener("change", update);
   }, []);
 
-  function handleLogin(event: FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
-    if (!employeeCode.trim()) { setError("Informe seu código de acesso."); return; }
+    if (!loginValue.trim()) { setError("Informe seu login cadastrado."); return; }
     setError("");
     setSubmitting(true);
     try {
-      if (profile === "funcionario") {
-        window.localStorage.setItem("cellarium-user-role", "requisitante");
-        window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
-        window.localStorage.setItem("cellarium-requester-sector", sector);
+      const session = await login(loginValue.trim(), password);
+      const actualProfile = session.usuario.perfil.toLocaleUpperCase("pt-BR");
+      const isRequester = actualProfile === "SOLICITANTE";
+      if (profile === "funcionario" && !isRequester) {
+        setSubmitting(false);
+        setError("Este usuário não está cadastrado como solicitante no backend.");
+        return;
+      }
+      if (profile === "almoxarife" && !["ALMOXARIFE", "ADMIN", "GESTOR"].includes(actualProfile)) {
+        setSubmitting(false);
+        setError("Este usuário não está cadastrado para acessar o almoxarifado.");
+        return;
+      }
+      storeApiSession(session.access_token, session.usuario);
+      if (isRequester) {
+        const availableSectors = await listSectors();
+        const requesterSector = availableSectors.find((item) => item.id === session.usuario.setor_id)?.nome;
+        if (!requesterSector) {
+          setSubmitting(false);
+          setError("O usuário autenticado não possui um setor válido cadastrado.");
+          return;
+        }
+        window.localStorage.setItem("cellarium-requester-code", session.usuario.login);
+        window.localStorage.setItem("cellarium-requester-sector", requesterSector);
         window.dispatchEvent(new Event("cellarium-requester-profile-updated"));
         router.push("/materiais");
       } else {
-        window.localStorage.setItem("cellarium-user-role", "almoxarife");
-        router.push("/painel");
+        router.push("/fila");
       }
-    } catch {
+    } catch (cause) {
       setSubmitting(false);
-      setError("Permita o armazenamento deste site no navegador para acessar o portal.");
+      setError(cause instanceof ApiError ? cause.message : "Não foi possível entrar. Verifique a API e tente novamente.");
     }
   }
 
@@ -80,14 +98,13 @@ export default function LoginPage() {
         <div className="mb-8"><p className="ui-eyebrow">Bem-vindo ao portal Marcon</p><h2>Acesse sua operação.</h2><p className="mt-3 text-[13px] leading-6 text-slate-500">Escolha seu perfil para solicitar materiais ou gerenciar o almoxarifado.</p></div>
         <div className="login-profile-switch mb-7" role="group" aria-label="Tipo de acesso">{(["funcionario", "almoxarife"] as const).map((item) => <button key={item} type="button" aria-pressed={profile === item} onClick={() => { setProfile(item); setError(""); }}>{item === "funcionario" ? <UserRound size={16}/> : <Boxes size={16}/>} {item === "funcionario" ? "Funcionário" : "Almoxarife"}</button>)}</div>
         <form onSubmit={handleLogin} className="space-y-5">
-          <label className="block" htmlFor="login-code"><span className="mb-2 block text-xs font-medium text-slate-700">{profile === "funcionario" ? "Código do funcionário" : "Código de acesso"}</span><span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5"><UserRound size={17} className="shrink-0 text-slate-400"/><input id="login-code" required autoComplete="username" value={employeeCode} onChange={(event) => { setEmployeeCode(event.target.value); setError(""); }} placeholder={profile === "funcionario" ? "Ex.: 123456" : "Informe seu código"} className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"/></span></label>
-          {profile === "funcionario" && <label className="block" htmlFor="login-sector"><span className="mb-2 block text-xs font-medium text-slate-700">Seu setor</span><select id="login-sector" required value={sector} onChange={(event) => setSector(event.target.value)} className="h-12 w-full border border-slate-300 px-3.5 text-sm"><option value="">Selecione seu setor</option>{sectors.map((item) => <option key={item}>{item}</option>)}</select><span className="mt-1.5 block text-[10px] text-slate-500">Usaremos este setor nas suas próximas requisições.</span></label>}
+          <label className="block" htmlFor="login-identifier"><span className="mb-2 block text-xs font-medium text-slate-700">Login cadastrado</span><span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5"><UserRound size={17} className="shrink-0 text-slate-400"/><input id="login-identifier" required autoComplete="username" value={loginValue} onChange={(event) => { setLoginValue(event.target.value); setError(""); }} placeholder="Informe seu login" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"/></span><span className="mt-1.5 block text-[10px] text-slate-500">Use o valor cadastrado em usuarios.login.</span></label>
+          {profile === "funcionario" && <p className="-mt-2 text-[11px] text-slate-500">Seu setor será carregado do cadastro vinculado à sua conta.</p>}
           <label className="block" htmlFor="login-password"><span className="mb-2 block text-xs font-medium text-slate-700">Senha</span><span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5"><LockKeyhole size={17} className="shrink-0 text-slate-400"/><input id="login-password" autoComplete="current-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"/><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} aria-pressed={showPassword} className="shell-icon-button -mr-2">{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></span></label>
           <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" className="h-4 w-4"/>Manter conectado</label><a href="mailto:ti@marcon.com.br?subject=Recuperar%20acesso" className="text-xs font-medium text-brand">Esqueceu a senha?</a></div>
           {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-700">{error}</p>}
           <Button type="submit" loading={submitting} className="login-submit">{submitting ? "Abrindo seu portal…" : "Entrar no portal"}{!submitting && <ArrowRight size={16}/>}</Button>
         </form>
-        <p className="login-demo-note"><Info size={13}/>Ambiente demonstrativo · acesso por perfil</p>
         <div className="mt-7 border-t border-slate-200 pt-5 text-center"><p className="text-[11px] text-slate-500">Precisa de ajuda? <a href="mailto:ti@marcon.com.br" className="font-medium text-brand">Fale com o suporte de TI</a></p></div>
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Activity, ArrowRight, Bell, Boxes, Building2, Check, CheckSquare, ChevronRight, ClipboardList, Clock3, LayoutDashboard, LogOut, Menu, MessageCircle, Package, Plus, QrCode, ShoppingCart, UserRound, X } from "lucide-react";
 import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
@@ -13,6 +13,7 @@ import { navItems } from "@/lib/mock-data";
 import { getAllRequests, getServerRequests, subscribeToRequests } from "@/lib/request-storage";
 import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications, getSectorNoticesSnapshot, getServerSectorNoticesSnapshot, parseSectorNotices, subscribeToSectorNotices } from "@/lib/notification-storage";
 import { getRequesterCode, getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
+import { clearApiSession, getStoredApiUser, listPendingRequests, type ApiPendingRequest, type ApiUser } from "@/lib/warehouse-api";
 
 const iconMap = { layout: LayoutDashboard, requests: ClipboardList, messages: MessageCircle, boxes: Boxes, checkSquare: CheckSquare, history: Clock3, inventory: Package, analytics: Activity, user: UserRound, shoppingCart: ShoppingCart };
 const warehouseTitles: Record<string, string> = { "/painel": "Painel geral", "/fila": "Requisições", "/separacao": "Separação", "/estoque-setor": "Estoque por setor", "/inventario": "Inventário", "/compras": "Compras", "/historico": "Histórico", "/analises": "Análises", "/conversas": "Conversas", "/perfil": "Meu perfil", "/qrcode": "Leitor QR Code" };
@@ -37,8 +38,24 @@ function useToday() {
 
 export function Sidebar({ open, close }: { open: boolean; close: () => void }) {
   const pathname = usePathname();
-  const liveRequests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
-  const pendingCount = liveRequests.filter((request) => request.status === "Pendente").length;
+  const [apiUser, setApiUser] = useState<ApiUser | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const syncAccount = useEffectEvent(() => setApiUser(getStoredApiUser()));
+  const syncPending = useEffectEvent(async () => {
+    try {
+      const result = await listPendingRequests();
+      setPendingCount(result.dados.length);
+    } catch {
+      setPendingCount(0);
+    }
+  });
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      syncAccount();
+      void syncPending();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   useDialogAccessibility(open, close);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 1024px)");
@@ -59,7 +76,7 @@ export function Sidebar({ open, close }: { open: boolean; close: () => void }) {
       <div className="shell-brand"><Link href="/painel" onClick={close} aria-label="Marcon, painel do almoxarifado"><BrandLogo className="w-[148px]"/><span>Gestão de materiais</span></Link><button type="button" onClick={close} aria-label="Fechar menu" className="shell-icon-button shell-mobile-only"><X size={19}/></button></div>
       <div className="shell-workspace"><span className="shell-workspace-icon"><Building2 size={19}/></span><div><strong>Almoxarifado</strong><span>Marcon · Planta 01</span></div><span className="shell-status-dot" role="img" aria-label="Unidade ativa"/></div>
       <div className="shell-sidebar-scroll"><p className="shell-nav-label">Operação</p><nav aria-label="Operação">{navigation(navItems.filter((item) => ["/painel", "/fila", "/separacao", "/conversas"].includes(item.href)))}</nav><p className="shell-nav-label">Gestão de materiais</p><nav aria-label="Gestão de materiais">{navigation(navItems.filter((item) => !["/painel", "/fila", "/separacao", "/conversas"].includes(item.href)))}</nav><Link href="/qrcode" onClick={close} aria-current={pathname === "/qrcode" ? "page" : undefined} className={`shell-qr-link ${pathname === "/qrcode" ? "is-active" : ""}`}><QrCode size={19}/><span>Leitor de etiquetas<span>Acesse pelo QR Code</span></span><ArrowRight size={15}/></Link></div>
-      <div className="shell-account"><Link href="/perfil" onClick={close} className="shell-account-profile"><span className="shell-avatar">CS</span><span><strong>Carlos Silva</strong><small>Almoxarife</small></span></Link><Link href="/login" aria-label="Sair da conta" title="Sair da conta" className="shell-icon-button"><LogOut size={18}/></Link></div>
+      <div className="shell-account"><Link href="/perfil" onClick={close} className="shell-account-profile"><span className="shell-avatar">{apiUser?.nome.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toLocaleUpperCase("pt-BR") || "US"}</span><span><strong>{apiUser?.nome ?? "Conta autenticada"}</strong><small>{apiUser?.perfil ?? "Sessão do backend"}</small></span></Link><Link href="/login" onClick={clearApiSession} aria-label="Sair da conta" title="Sair da conta" className="shell-icon-button"><LogOut size={18}/></Link></div>
     </aside>
   </>;
 }
@@ -69,14 +86,28 @@ export function Topbar({ onMenu, menuOpen }: { onMenu: () => void; menuOpen: boo
   const today = useToday();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationArea = useRef<HTMLDivElement>(null);
-  const requests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
+  const [pendingRequests, setPendingRequests] = useState<ApiPendingRequest[]>([]);
   const inventory = useInventoryItems();
   const readSnapshot = useSyncExternalStore(subscribeToReadNotifications, () => getReadNotificationsSnapshot("warehouse"), getServerReadNotificationsSnapshot);
   const readIds = parseReadNotificationIds(readSnapshot);
-  const pending = requests.filter((request) => request.status === "Pendente");
+  const loadPending = useEffectEvent(async () => {
+    try {
+      const result = await listPendingRequests();
+      setPendingRequests(result.dados.filter((request) => request.status === "PENDENTE"));
+    } catch {
+      setPendingRequests([]);
+    }
+  });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadPending(), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const pending = pendingRequests;
   const critical = inventory.filter((item) => item.quantity < item.minimum);
   const notifications = [
-    ...pending.slice(0, 4).map((request) => ({ id: `pending-request-${request.id}`, href: "/fila", title: "Nova requisição", detail: `${request.id} · ${request.requester}` })),
+    ...pending.slice(0, 4).map((request) => ({ id: `pending-request-${request.requisicao_id}`, href: "/fila", title: "Nova requisição", detail: `${request.numero} · ${request.setor}` })),
     ...(critical.length ? [{ id: `critical-stock-${critical.map((item) => `${item.code}-${item.quantity}`).join("-")}`, href: "/inventario", title: "Estoque para revisar", detail: `${critical.length} materiais abaixo do mínimo` }] : []),
   ].filter((notification) => !readIds.includes(notification.id));
 
@@ -104,5 +135,5 @@ export function RequesterLayout({ children }: { children: ReactNode }) {
   const requestNoticeIds = requests.filter((request) => employeeCode && request.employeeCode === employeeCode).flatMap((request) => [...(request.status === "Em andamento" ? [`${request.id}:in-progress`] : []), ...(request.deliveryConfirmed ? [`${request.id}:delivery-confirmed`] : [])]);
   const unread = [...requestNoticeIds, ...parseSectorNotices(noticeSnapshot).filter((notice) => notice.sector === employeeSector).map((notice) => notice.id)].filter((id) => !readIds.includes(id)).length;
 
-  return <div className="requester-app"><a href="#main-content" className="skip-link">Pular para o conteúdo</a><header className="requester-header"><div className="requester-header-inner"><Link href="/materiais" aria-label="Marcon, portal do requisitante" className="requester-brand"><BrandLogo className="w-[126px] sm:w-[152px]"/><span>Portal de materiais</span></Link><div className="requester-identity"><Building2 size={16} aria-hidden="true"/><span><strong>{employeeSector || "Seu setor"}</strong><small>{employeeCode ? `Funcionário ${employeeCode}` : "Portal do requisitante"}</small></span></div><div className="flex items-center gap-1 sm:gap-3"><ThemeToggle/><Link href="/login" aria-label="Sair da conta" title="Sair da conta" className="shell-icon-button"><LogOut size={18}/></Link></div></div><nav aria-label="Portal do requisitante" className="requester-nav">{requesterNav.map(({ href, label, mobileLabel, icon: Icon }) => { const active = pathname === href || (href === "/materiais" && pathname === "/pedido"); return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : ""}><Icon size={18} aria-hidden="true"/><span className="requester-nav-desktop-label">{label}</span><span className="requester-nav-mobile-label">{mobileLabel}</span>{href === "/notificacoes" && unread > 0 && <span className="requester-unread">{unread}</span>}</Link>; })}</nav></header><main id="main-content" tabIndex={-1} className="requester-content">{children}</main><footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> Gestão de materiais</span><span>Ambiente demonstrativo</span></footer></div>;
+  return <div className="requester-app"><a href="#main-content" className="skip-link">Pular para o conteúdo</a><header className="requester-header"><div className="requester-header-inner"><Link href="/materiais" aria-label="Marcon, portal do requisitante" className="requester-brand"><BrandLogo className="w-[126px] sm:w-[152px]"/><span>Portal de materiais</span></Link><div className="requester-identity"><Building2 size={16} aria-hidden="true"/><span><strong>{employeeSector || "Seu setor"}</strong><small>{employeeCode ? `Funcionário ${employeeCode}` : "Portal do requisitante"}</small></span></div><div className="flex items-center gap-1 sm:gap-3"><ThemeToggle/><Link href="/login" aria-label="Sair da conta" title="Sair da conta" className="shell-icon-button"><LogOut size={18}/></Link></div></div><nav aria-label="Portal do requisitante" className="requester-nav">{requesterNav.map(({ href, label, mobileLabel, icon: Icon }) => { const active = pathname === href || (href === "/materiais" && pathname === "/pedido"); return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : ""}><Icon size={18} aria-hidden="true"/><span className="requester-nav-desktop-label">{label}</span><span className="requester-nav-mobile-label">{mobileLabel}</span>{href === "/notificacoes" && unread > 0 && <span className="requester-unread">{unread}</span>}</Link>; })}</nav></header><main id="main-content" tabIndex={-1} className="requester-content">{children}</main><footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> Gestão de materiais</span><span>Til Marcon</span></footer></div>;
 }
