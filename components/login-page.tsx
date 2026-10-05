@@ -7,7 +7,7 @@ import { ArrowRight, Boxes, ClipboardList, Eye, EyeOff, LockKeyhole, PackageChec
 import BrandLogo from "@/components/brand-logo";
 import ThemeToggle from "@/components/theme-toggle";
 import { Button } from "@/components/ui";
-import { ApiError, login, listSectors, storeApiSession } from "@/lib/warehouse-api";
+import { ApiError, login, listSectors, normalizeUserProfile, storeApiSession } from "@/lib/warehouse-api";
 
 type Profile = "funcionario" | "almoxarife";
 
@@ -48,14 +48,14 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const session = await login(loginValue.trim(), password);
-      const actualProfile = session.usuario.perfil.toLocaleUpperCase("pt-BR");
-      const isRequester = actualProfile === "SOLICITANTE";
+      const actualProfile = normalizeUserProfile(session.usuario.perfil);
+      const isRequester = actualProfile === "funcionario";
       if (profile === "funcionario" && !isRequester) {
         setSubmitting(false);
-        setError("Este usuário não está cadastrado como solicitante no backend.");
+        setError("Este usuário não está cadastrado como funcionário/solicitante no backend.");
         return;
       }
-      if (profile === "almoxarife" && !["ALMOXARIFE", "ADMIN", "GESTOR"].includes(actualProfile)) {
+      if (profile === "almoxarife" && actualProfile !== "almoxarife") {
         setSubmitting(false);
         setError("Este usuário não está cadastrado para acessar o almoxarifado.");
         return;

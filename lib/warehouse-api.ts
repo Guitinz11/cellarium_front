@@ -127,6 +127,18 @@ export type ApiUser = {
   ativo: boolean;
 };
 
+export type NormalizedUserRole = "funcionario" | "almoxarife" | "desconhecido";
+
+export function normalizeUserProfile(profile?: string | null): NormalizedUserRole {
+  const candidate = (profile ?? "").trim();
+  if (!candidate) return "desconhecido";
+
+  const upper = candidate.toLocaleUpperCase("en-US");
+  if (["FUNCIONARIO", "SOLICITANTE", "REQUISITANTE"].includes(upper)) return "funcionario";
+  if (["ALMOXARIFE", "ADMIN", "GESTOR"].includes(upper)) return "almoxarife";
+  return "desconhecido";
+}
+
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const accessTokenKey = "cellarium-access-token";
 const userKey = "cellarium-api-user";
@@ -150,9 +162,10 @@ export function getAccessToken() {
 }
 
 export function storeApiSession(token: string, user: ApiUser) {
+  const normalizedProfile = normalizeUserProfile(user.perfil);
   window.localStorage.setItem(accessTokenKey, token);
   window.localStorage.setItem(userKey, JSON.stringify(user));
-  window.localStorage.setItem("cellarium-user-role", user.perfil.toLocaleLowerCase("pt-BR"));
+  window.localStorage.setItem("cellarium-user-role", normalizedProfile === "desconhecido" ? (user.perfil ?? "").trim().toLocaleLowerCase("pt-BR") : normalizedProfile);
   for (const key of [
     "cellarium-submitted-requests",
     "cellarium-inventory-state",
