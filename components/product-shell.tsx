@@ -10,10 +10,9 @@ import { EmptyState } from "@/components/ui";
 import { useDialogAccessibility } from "@/components/use-dialog-accessibility";
 import { useInventoryItems } from "@/components/use-inventory-items";
 import { navItems } from "@/lib/mock-data";
-import { getAllRequests, getServerRequests, subscribeToRequests } from "@/lib/request-storage";
-import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications, getSectorNoticesSnapshot, getServerSectorNoticesSnapshot, parseSectorNotices, subscribeToSectorNotices } from "@/lib/notification-storage";
+import { getReadNotificationsSnapshot, getServerReadNotificationsSnapshot, markNotificationAsRead, parseReadNotificationIds, subscribeToReadNotifications } from "@/lib/notification-storage";
 import { getRequesterCode, getRequesterSector, getServerRequesterValue, subscribeToRequesterSession } from "@/lib/requester-session";
-import { clearApiSession, getStoredApiUser, listPendingRequests, type ApiPendingRequest, type ApiUser } from "@/lib/warehouse-api";
+import { clearApiSession, getStoredApiUser, listNotifications, listPendingRequests, type ApiPendingRequest, type ApiUser } from "@/lib/warehouse-api";
 
 const iconMap = { layout: LayoutDashboard, requests: ClipboardList, messages: MessageCircle, boxes: Boxes, checkSquare: CheckSquare, history: Clock3, inventory: Package, analytics: Activity, user: UserRound, shoppingCart: ShoppingCart };
 const warehouseTitles: Record<string, string> = { "/painel": "Painel geral", "/fila": "Requisições", "/separacao": "Separação", "/estoque-setor": "Estoque por setor", "/inventario": "Inventário", "/compras": "Compras", "/historico": "Histórico", "/analises": "Análises", "/conversas": "Conversas", "/perfil": "Meu perfil", "/qrcode": "Leitor QR Code" };
@@ -127,13 +126,14 @@ export function RequesterLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const employeeCode = useSyncExternalStore(subscribeToRequesterSession, getRequesterCode, getServerRequesterValue);
   const employeeSector = useSyncExternalStore(subscribeToRequesterSession, getRequesterSector, getServerRequesterValue);
-  const requests = useSyncExternalStore(subscribeToRequests, getAllRequests, getServerRequests);
-  const noticeSnapshot = useSyncExternalStore(subscribeToSectorNotices, getSectorNoticesSnapshot, getServerSectorNoticesSnapshot);
-  const readScope = `employee:${employeeCode || employeeSector || "default"}`;
-  const readSnapshot = useSyncExternalStore(subscribeToReadNotifications, () => getReadNotificationsSnapshot(readScope), getServerReadNotificationsSnapshot);
-  const readIds = parseReadNotificationIds(readSnapshot);
-  const requestNoticeIds = requests.filter((request) => employeeCode && request.employeeCode === employeeCode).flatMap((request) => [...(request.status === "Em andamento" ? [`${request.id}:in-progress`] : []), ...(request.deliveryConfirmed ? [`${request.id}:delivery-confirmed`] : [])]);
-  const unread = [...requestNoticeIds, ...parseSectorNotices(noticeSnapshot).filter((notice) => notice.sector === employeeSector).map((notice) => notice.id)].filter((id) => !readIds.includes(id)).length;
-
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => { try { const items = await listNotifications(); if (active) setUnread(items.filter((item) => !item.lida).length); } catch { if (active) setUnread(0); } };
+    window.addEventListener("cellarium-notifications-updated", refresh);
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 30_000);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener("cellarium-notifications-updated", refresh); };
+  }, [pathname]);
   return <div className="requester-app"><a href="#main-content" className="skip-link">Pular para o conteúdo</a><header className="requester-header"><div className="requester-header-inner"><Link href="/materiais" aria-label="Marcon, portal do requisitante" className="requester-brand"><BrandLogo className="w-[126px] sm:w-[152px]"/><span>Portal de materiais</span></Link><div className="requester-identity"><Building2 size={16} aria-hidden="true"/><span><strong>{employeeSector || "Seu setor"}</strong><small>{employeeCode ? `Funcionário ${employeeCode}` : "Portal do requisitante"}</small></span></div><div className="flex items-center gap-1 sm:gap-3"><ThemeToggle/><Link href="/login" aria-label="Sair da conta" title="Sair da conta" className="shell-icon-button"><LogOut size={18}/></Link></div></div><nav aria-label="Portal do requisitante" className="requester-nav">{requesterNav.map(({ href, label, mobileLabel, icon: Icon }) => { const active = pathname === href || (href === "/materiais" && pathname === "/pedido"); return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : ""}><Icon size={18} aria-hidden="true"/><span className="requester-nav-desktop-label">{label}</span><span className="requester-nav-mobile-label">{mobileLabel}</span>{href === "/notificacoes" && unread > 0 && <span className="requester-unread">{unread}</span>}</Link>; })}</nav></header><main id="main-content" tabIndex={-1} className="requester-content">{children}</main><footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> Gestão de materiais</span><span>Til Marcon</span></footer></div>;
 }

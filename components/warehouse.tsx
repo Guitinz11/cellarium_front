@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -15,14 +15,17 @@ import WarehouseRequestQr from "@/components/warehouse-request-qr";
 import WarehouseInventory from "@/components/inventory-live";
 import WarehouseProfile from "@/components/warehouse-profile-live";
 import BackendDataUnavailable from "@/components/backend-data-unavailable";
+import SectorStockLive from "@/components/sector-stock-live";
+import NotificationsLive from "@/components/employee-notifications-live";
+import RequestConversationsLive from "@/components/request-conversations-live";
 import AccessDenied from "@/components/access-denied";
 import { RequesterLayout, Sidebar, Topbar } from "@/components/product-shell";
 import { ApiError, ApiUnavailableError, clearApiSession, getAccessToken, getCurrentUser, normalizeUserProfile } from "@/lib/warehouse-api";
 
 const requesterUnavailable: Record<string, ReactNode> = {
-  "/chat": <BackendDataUnavailable title="Conversas indisponíveis" detail="O backend ainda não oferece um endpoint de conversas. Nenhuma mensagem local será exibida como dado real."/>,
-  "/notificacoes": <BackendDataUnavailable title="Notificações indisponíveis" detail="O backend ainda não oferece uma consulta de notificações para este portal."/>,
-  "/meu-estoque": <BackendDataUnavailable title="Estoque do setor indisponível" detail="A API atual não fornece saldo segregado por setor. Nenhum saldo local será apresentado como se viesse do banco."/>,
+  "/chat": <RequestConversationsLive/>,
+  "/notificacoes": <NotificationsLive/>,
+  "/meu-estoque": <SectorStockLive/>,
 };
 
 const warehousePages: Record<string, ReactNode> = {
@@ -34,9 +37,9 @@ const warehousePages: Record<string, ReactNode> = {
   "/inventario": <WarehouseInventory/>,
   "/qrcode": <WarehouseRequestQr/>,
   "/perfil": <WarehouseProfile/>,
-  "/estoque-setor": <BackendDataUnavailable title="Estoque por setor indisponível" detail="O backend ainda não modela saldo segregado por setor. Esta tela não usará saldos locais."/>,
-  "/compras": <BackendDataUnavailable title="Compras indisponíveis" detail="O backend ainda não oferece endpoints para pedidos de compra ou recebimento de materiais. Nenhuma compra local será tratada como registro real."/>,
-  "/conversas": <BackendDataUnavailable title="Conversas indisponíveis" detail="O backend ainda não oferece um endpoint de conversas para o almoxarifado."/>,
+  "/estoque-setor": <SectorStockLive warehouse/>,
+  "/compras": <BackendDataUnavailable title="Compras indisponÃ­veis" detail="O backend ainda nÃ£o oferece endpoints para pedidos de compra ou recebimento de materiais. Nenhuma compra local serÃ¡ tratada como registro real."/>,
+  "/conversas": <RequestConversationsLive/>,
 };
 
 export default function WarehouseScreen() {
@@ -88,7 +91,7 @@ export default function WarehouseScreen() {
 
   if (pathname === "/" || pathname.startsWith("/login")) return <LoginPage/>;
   if (access.pathname !== pathname || access.state === "checking") {
-    return <main className="access-checking" role="status" aria-live="polite"><span className="access-checking-mark" aria-hidden="true"/><p>Validando seu acesso…</p></main>;
+    return <main className="access-checking" role="status" aria-live="polite"><span className="access-checking-mark" aria-hidden="true"/><p>Validando seu acessoâ€¦</p></main>;
   }
   if (access.state === "unavailable") return <AccessDenied unavailable/>;
   if (access.state !== "allowed") return null;
@@ -100,14 +103,15 @@ export default function WarehouseScreen() {
   }
 
   return <div className="warehouse-app">
-    <a href="#main-content" className="skip-link">Pular para o conteúdo</a>
+    <a href="#main-content" className="skip-link">Pular para o conteÃºdo</a>
     <Sidebar open={menuOpen} close={() => setMenuOpen(false)}/>
     <div className="shell-main" inert={menuOpen}>
       <Topbar menuOpen={menuOpen} onMenu={() => setMenuOpen(true)}/>
       <main id="main-content" tabIndex={-1} className="warehouse-content">
         {warehousePages[pathname] ?? <OperationsDashboard/>}
       </main>
-      <footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> Gestão de materiais</span><span>Til Marcon</span></footer>
+      <footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> GestÃ£o de materiais</span><span>Til Marcon</span></footer>
     </div>
   </div>;
 }
+

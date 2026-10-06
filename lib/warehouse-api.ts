@@ -106,6 +106,11 @@ export type ApiStockItem = {
   situacao: string;
 };
 
+export type ApiSectorStock = { id: number; setor_id: number; material_id: number; codigo: string; material: string; unidade_medida_id: number; unidade_sigla: string; quantidade_atual: number; updated_at: string };
+export type ApiSectorMovement = { id: number; material_id: number; codigo: string; material: string; tipo: string; quantidade: number; saldo_anterior: number; saldo_posterior: number; observacao: string | null; created_at: string };
+export type ApiMessage = { id: number; requisicao_id: number; usuario_id: number; usuario: string; texto: string; created_at: string };
+export type ApiNotification = { id: number; requisicao_id: number | null; tipo: string; titulo: string; mensagem: string; lida: boolean; created_at: string };
+
 export type ApiMaterial = {
   id: number;
   codigo: string;
@@ -268,6 +273,19 @@ export async function createRequest(payload: {
 
 export async function listMyRequests() {
   return apiRequest<{ dados: ApiRequestSummary[]; total: number; page: number; limit: number }>("/requisicoes?limit=100");
+}
+
+export async function listSectorStock(sectorId?: number) { return apiRequest<ApiSectorStock[]>(`/estoque-setor${sectorId ? `?setor_id=${sectorId}` : ""}`); }
+export async function listSectorStockHistory(sectorId?: number) { return apiRequest<ApiSectorMovement[]>(`/estoque-setor/historico${sectorId ? `?setor_id=${sectorId}` : ""}`); }
+export async function consumeSectorStock(payload: { material_id: number; quantidade: number; observacao?: string }, key: string) {
+  return apiRequest<{ material_id: number; quantidade_atual: number }>("/estoque-setor/consumos", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(payload) });
+}
+export async function listNotifications() { return apiRequest<ApiNotification[]>("/notificacoes"); }
+export async function markNotificationRead(id: number) { return apiRequest<{ id: number; lida: boolean }>(`/notificacoes/${id}/lida`, { method: "PATCH" }); }
+export async function markAllNotificationsRead() { return apiRequest<{ atualizadas: number }>("/notificacoes/lidas", { method: "PATCH" }); }
+export async function listRequestMessages(id: number) { return apiRequest<ApiMessage[]>(`/requisicoes/${id}/mensagens`); }
+export async function sendRequestMessage(id: number, texto: string) {
+  return apiRequest<ApiMessage>(`/requisicoes/${id}/mensagens`, { method: "POST", body: JSON.stringify({ texto }) });
 }
 
 export async function getActiveAttendance() {
