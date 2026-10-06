@@ -41,13 +41,28 @@ export default function LoginPage() {
     return () => motion.removeEventListener("change", update);
   }, []);
 
-  function handleLogin(event: FormEvent<HTMLFormElement>) {
+  const adminEntry = profile === "almoxarife" && employeeCode.trim().toLowerCase() === "admin_cinza";
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
     if (!employeeCode.trim()) { setError("Informe seu código de acesso."); return; }
     setError("");
     setSubmitting(true);
     try {
+      if (adminEntry) {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login: employeeCode.trim().toLowerCase(), senha: password }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail ?? "Login ou senha inválidos.");
+        if (result.usuario?.perfil !== "ADMIN") throw new Error("Esta conta não tem acesso de administrador.");
+        window.localStorage.setItem("cellarium-admin-token", result.access_token);
+        router.push("/admin");
+        return;
+      }
       if (profile === "funcionario") {
         window.localStorage.setItem("cellarium-user-role", "requisitante");
         window.localStorage.setItem("cellarium-requester-code", employeeCode.trim());
@@ -58,9 +73,10 @@ export default function LoginPage() {
         window.localStorage.setItem("cellarium-user-role", "almoxarife");
         router.push("/painel");
       }
-    } catch {
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível acessar o portal.");
+    } finally {
       setSubmitting(false);
-      setError("Permita o armazenamento deste site no navegador para acessar o portal.");
     }
   }
 
@@ -87,7 +103,7 @@ export default function LoginPage() {
           {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-700">{error}</p>}
           <Button type="submit" loading={submitting} className="login-submit">{submitting ? "Abrindo seu portal…" : "Entrar no portal"}{!submitting && <ArrowRight size={16}/>}</Button>
         </form>
-        <p className="login-demo-note"><Info size={13}/>Ambiente demonstrativo · acesso por perfil</p>
+        <p className="login-demo-note"><Info size={13}/>{adminEntry ? "Acesso administrativo protegido" : "Ambiente demonstrativo · acesso por perfil"}</p>
         <div className="mt-7 border-t border-slate-200 pt-5 text-center"><p className="text-[11px] text-slate-500">Precisa de ajuda? <a href="mailto:ti@marcon.com.br" className="font-medium text-brand">Fale com o suporte de TI</a></p></div>
       </div>
     </section>

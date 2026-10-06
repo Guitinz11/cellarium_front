@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, QrCode, X } from "lucide-react";
-import type { materialsCatalog } from "@/lib/mock-data";
+import { materialsCatalog } from "@/lib/mock-data";
 import { findScannedMaterial } from "@/lib/product-code";
 import { useDialogAccessibility } from "@/components/use-dialog-accessibility";
 
