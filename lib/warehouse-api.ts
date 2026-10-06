@@ -74,16 +74,22 @@ export type ApiRequestDetail = {
 
 export type ApiMovement = {
   id: number;
+  material_id: number;
   data: string;
   usuario: string;
   setor: string | null;
   material: string;
+  unidade?: string | null;
   tipo: string;
   quantidade: number;
   estoque_anterior: number;
   estoque_posterior: number;
   requisicao_id: number | null;
   setor_id: number | null;
+  requisicao_numero?: string | null;
+  requisicao_data?: string | null;
+  solicitante?: string | null;
+  separador?: string | null;
 };
 
 export type ApiStockItem = {
