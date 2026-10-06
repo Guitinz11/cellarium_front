@@ -352,14 +352,16 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
   .catalog-stepper button { width: 40px; height: 36px; }
   .catalog-pagination { margin-top: 10px; }
   .catalog-pagination button { min-height: 42px; }
+  .catalog-sheet { padding-right: 18px; padding-left: 18px; }
+  .login-showcase { min-height: 150px; } .login-showcase h1, .login-feature-list { display: none; } .login-form-side { padding-top: 64px; padding-bottom: 32px; }
+  .product-footer { flex-wrap: wrap; gap: 6px; } .page-heading-action > * { max-width: 100%; }
+}
+@media (max-width: 767px) {
   .catalog-selection-bar { right: 10px; bottom: calc(69px + env(safe-area-inset-bottom)); left: 10px; min-height: 68px; gap: 8px; padding: 8px 9px 8px 13px; border-radius: 12px; }
   .catalog-selection-bar p { font-size: 11px; }
   .catalog-selection-bar p span { max-width: 25ch; font-size: 9px; }
   .catalog-selection-bar .ui-button { min-height: 46px; padding: 0 13px; font-size: 12px; white-space: nowrap; }
   .catalog-selection-spacer { height: 82px; }
-  .catalog-sheet { padding-right: 18px; padding-left: 18px; }
-  .login-showcase { min-height: 150px; } .login-showcase h1, .login-feature-list { display: none; } .login-form-side { padding-top: 64px; padding-bottom: 32px; }
-  .product-footer { flex-wrap: wrap; gap: 6px; } .page-heading-action > * { max-width: 100%; }
 }
 @media (max-width: 380px) { .requester-identity { display: none; } }
 .list-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
