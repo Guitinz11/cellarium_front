@@ -364,4 +364,37 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
 @media (max-width: 380px) { .requester-identity { display: none; } }
 .list-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
 .list-pagination > div { display: flex; align-items: center; gap: 12px; } .list-pagination .ui-button { min-height: 36px; font-size: 11px; padding: 0 12px; }
+.admin-app { background: var(--background); color: var(--foreground); }
+.admin-app .shell-topbar { background: var(--surface); }
+.admin-content { max-width: 1440px; }
+.admin-content .admin-panel { border-color: var(--line); background: var(--surface); color: var(--foreground); box-shadow: var(--shadow-card); }
+.admin-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 19px 20px; border-bottom: 1px solid var(--line); }
+.admin-panel-head h2 { color: var(--foreground); font-size: 14px; font-weight: 600; }
+.admin-panel-head p { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.admin-table thead tr { background: var(--surface-soft); }
+.admin-table th { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.admin-table tbody tr { border-bottom: 1px solid var(--line); }
+.admin-table tbody tr:last-child { border-bottom: 0; }
+.admin-table td { color: var(--foreground); }
+.admin-tag { display: inline-flex; align-items: center; border-radius: 5px; padding: 4px 7px; background: var(--surface-soft); color: var(--muted); font-size: 10px; font-weight: 500; }
+.admin-active { color: var(--success); font-size: 11px; font-weight: 500; }
+.admin-muted { color: var(--muted); font-size: 11px; }
+.admin-delete-button:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, var(--surface)); }
+.admin-reactivate { min-height: 36px; border-radius: 7px; padding: 0 10px; color: var(--success); font-size: 11px; font-weight: 600; }
+.admin-reactivate:hover { background: color-mix(in srgb, var(--success) 9%, var(--surface)); }
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+.admin-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-bottom: -1px; border-bottom: 2px solid transparent; padding: 0 13px; color: var(--muted); font-size: 12px; font-weight: 500; }
+.admin-tab span { display: inline-grid; min-width: 21px; height: 21px; place-items: center; border-radius: 20px; background: var(--surface-soft); color: var(--muted); font-size: 10px; }
+.admin-tab.is-active { border-color: var(--brand); color: var(--brand); }
+.admin-form { display: grid; gap: 15px; padding: 20px; }
+.admin-form label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.admin-form input, .admin-form select { width: 100%; min-height: 40px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); padding: 0 11px; background: var(--surface); color: var(--foreground); font: inherit; font-size: 12px; }
+.admin-form input:focus, .admin-form select:focus { border-color: var(--brand); outline: 3px solid color-mix(in srgb, var(--brand) 14%, transparent); }
+.admin-form label > span { color: var(--muted); font-size: 10px; font-weight: 400; line-height: 1.5; }
+.admin-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.admin-sector-list > div + div { border-top: 1px solid var(--line); }
+.admin-sector-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; }
+.admin-sector-row p { color: var(--foreground); font-size: 12px; font-weight: 600; }
+.admin-sector-row span { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+@media (max-width: 639px) { .admin-form { padding: 16px; } .admin-table.responsive-table tr { border-bottom: 1px solid var(--line); } .admin-table.responsive-table td { color: var(--foreground); } .admin-sector-row { align-items: flex-start; padding: 15px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition-duration: .01ms !important; } }
