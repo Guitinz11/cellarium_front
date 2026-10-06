@@ -12,12 +12,14 @@ export type RequestRecord = {
   deliveryConfirmed?: boolean;
 };
 
+const emptyRequests: RequestRecord[] = [];
+
 export function getAllRequests(): RequestRecord[] {
-  return [];
+  return emptyRequests;
 }
 
 export function getServerRequests(): RequestRecord[] {
-  return [];
+  return emptyRequests;
 }
 
 export function subscribeToRequests(callback: () => void) {
