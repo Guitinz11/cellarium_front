@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Boxes, Building2, Check, LogOut, Pencil, Plus, ShieldCheck, UserRound, UserX, X } from "lucide-react";
-import { adminRequest, type AdminSector, type AdminUser } from "@/lib/admin-api";
+import { AdminApiError, adminRequest, type AdminSector, type AdminUser } from "@/lib/admin-api";
 import ThemeToggle from "@/components/theme-toggle";
 import BrandLogo from "@/components/brand-logo";
 import { Button, Card, Metric, PageHeading } from "@/components/ui";
@@ -32,7 +32,7 @@ export default function AdminPage() {
     const me = await adminRequest<{ perfil: string }>("/auth/me", authToken);
     if (me.perfil !== "ADMIN") {
       window.localStorage.removeItem("cellarium-admin-token");
-      router.replace("/login");
+      router.replace("/acesso-negado");
       return;
     }
     const [userRows, sectorRows] = await Promise.all([
@@ -46,7 +46,7 @@ export default function AdminPage() {
   useEffect(() => {
     const storedToken = window.localStorage.getItem("cellarium-admin-token");
     if (!storedToken) {
-      router.replace("/login");
+      router.replace("/acesso-negado");
       return;
     }
     tokenRef.current = storedToken;
@@ -54,7 +54,11 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData(storedToken).catch((cause: unknown) => {
       setError(cause instanceof Error ? cause.message : "Não foi possível carregar o painel.");
-      if (cause instanceof Error && /token|autentic/i.test(cause.message)) router.replace("/login");
+      if (cause instanceof AdminApiError && (cause.status === 401 || cause.status === 403)) {
+        window.localStorage.removeItem("cellarium-admin-token");
+        window.localStorage.removeItem("cellarium-admin-user");
+        router.replace("/acesso-negado");
+      }
     });
   }, [loadData, router]);
 

@@ -222,6 +222,9 @@ async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (response.status >= 500) throw new ApiUnavailableError(`A API respondeu com erro ${response.status}.`);
   const payload: unknown = response.status === 204 ? null : await response.json().catch(() => null);
+  if (response.status === 401 && path !== "/auth/login" && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cellarium-session-invalid"));
+  }
   if (!response.ok) throw new ApiError(errorMessage(payload, `Falha na solicitação (${response.status}).`), response.status);
   return payload as T;
 }

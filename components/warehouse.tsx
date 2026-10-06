@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import LoginPage from "@/components/login-page";
 import OperationsDashboard from "@/components/operations-dashboard-live";
@@ -15,7 +15,9 @@ import WarehouseRequestQr from "@/components/warehouse-request-qr";
 import WarehouseInventory from "@/components/inventory-live";
 import WarehouseProfile from "@/components/warehouse-profile-live";
 import BackendDataUnavailable from "@/components/backend-data-unavailable";
+import AccessDenied from "@/components/access-denied";
 import { RequesterLayout, Sidebar, Topbar } from "@/components/product-shell";
+import { ApiError, ApiUnavailableError, clearApiSession, getAccessToken, getCurrentUser, normalizeUserProfile } from "@/lib/warehouse-api";
 
 const requesterUnavailable: Record<string, ReactNode> = {
   "/chat": <BackendDataUnavailable title="Conversas indisponíveis" detail="O backend ainda não oferece um endpoint de conversas. Nenhuma mensagem local será exibida como dado real."/>,
@@ -39,9 +41,57 @@ const warehousePages: Record<string, ReactNode> = {
 
 export default function WarehouseScreen() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [access, setAccess] = useState<{ pathname: string; state: "checking" | "allowed" | "unavailable" }>({ pathname: "", state: "checking" });
+
+  useEffect(() => {
+    if (pathname === "/" || pathname.startsWith("/login")) return;
+    let active = true;
+    const reject = (clearSession: boolean) => {
+      if (clearSession) clearApiSession();
+      router.replace("/acesso-negado");
+    };
+    const token = getAccessToken();
+    if (!token) {
+      reject(false);
+      return;
+    }
+    const onSessionInvalid = () => reject(true);
+    window.addEventListener("cellarium-session-invalid", onSessionInvalid);
+    void getCurrentUser().then((user) => {
+      if (!active) return;
+      const role = normalizeUserProfile(user.perfil);
+      const requesterRoute = ["/materiais", "/pedido", "/acompanhar", "/meu-estoque", "/chat", "/notificacoes"].includes(pathname);
+      if (role === "desconhecido" || (requesterRoute && role !== "funcionario") || (!requesterRoute && role !== "almoxarife")) {
+        reject(false);
+        return;
+      }
+      setAccess({ pathname, state: "allowed" });
+    }).catch((cause: unknown) => {
+      if (!active) return;
+      if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+        reject(true);
+        return;
+      }
+      if (cause instanceof ApiUnavailableError) {
+        setAccess({ pathname, state: "unavailable" });
+        return;
+      }
+      setAccess({ pathname, state: "unavailable" });
+    });
+    return () => {
+      active = false;
+      window.removeEventListener("cellarium-session-invalid", onSessionInvalid);
+    };
+  }, [pathname, router]);
 
   if (pathname === "/" || pathname.startsWith("/login")) return <LoginPage/>;
+  if (access.pathname !== pathname || access.state === "checking") {
+    return <main className="access-checking" role="status" aria-live="polite"><span className="access-checking-mark" aria-hidden="true"/><p>Validando seu acesso…</p></main>;
+  }
+  if (access.state === "unavailable") return <AccessDenied unavailable/>;
+  if (access.state !== "allowed") return null;
   if (pathname === "/materiais") return <RequesterLayout><MaterialSelection/></RequesterLayout>;
   if (pathname === "/pedido") return <RequesterLayout><RequestForm/></RequesterLayout>;
   if (pathname === "/acompanhar") return <RequesterLayout><RequestSearch/></RequesterLayout>;

@@ -16,6 +16,13 @@ export type AdminSector = {
   ativo: boolean;
 };
 
+export class AdminApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "AdminApiError";
+  }
+}
+
 export async function adminRequest<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     ...init,
@@ -28,7 +35,7 @@ export async function adminRequest<T>(path: string, token: string, init: Request
   });
   const result = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(result?.detail ?? "Não foi possível concluir a operação.");
+    throw new AdminApiError(result?.detail ?? "Não foi possível concluir a operação.", response.status);
   }
   return result as T;
 }
