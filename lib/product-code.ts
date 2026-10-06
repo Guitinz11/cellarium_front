@@ -5,30 +5,38 @@ function normalizeCode(value: string) {
 }
 
 export function findScannedMaterial(rawValue: string) {
-  const candidates = [rawValue.trim()];
+  const raw = rawValue.trim();
+  if (!raw) return undefined;
+  const candidates = [raw];
+  const codeKeys = new Set(["code", "codigo", "productcode", "materialcode", "material", "sku", "id", "codigoproduto", "codigomaterial"]);
+  const addValue = (value: unknown) => {
+    if (typeof value === "string" || (typeof value === "number" && Number.isFinite(value))) candidates.push(String(value));
+  };
   try {
-    const parsed: unknown = JSON.parse(rawValue);
+    const parsed: unknown = JSON.parse(raw);
     if (typeof parsed === "object" && parsed !== null) {
-      for (const key of ["code", "codigo", "productCode", "materialCode", "material"]) {
-        const value = (parsed as Record<string, unknown>)[key];
-        if (typeof value === "string") candidates.push(value);
-        if (typeof value === "number" && Number.isFinite(value)) candidates.push(String(value));
+      for (const [key, value] of Object.entries(parsed)) {
+        if (codeKeys.has(normalizeCode(key).replace(/[^a-z0-9]/g, ""))) addValue(value);
       }
     }
   } catch {
     // QR contents can be a plain product code or URL.
   }
   try {
-    const url = new URL(rawValue);
-    for (const key of ["code", "codigo", "productCode", "materialCode", "material"]) {
-      const value = url.searchParams.get(key);
-      if (value) candidates.push(value);
+    const url = new URL(raw);
+    url.searchParams.forEach((value, key) => {
+      if (codeKeys.has(normalizeCode(key).replace(/[^a-z0-9]/g, ""))) candidates.push(value);
+    });
+    for (const segment of url.pathname.split("/").filter(Boolean)) {
+      try { candidates.push(decodeURIComponent(segment)); } catch { candidates.push(segment); }
     }
-    const pathCode = url.pathname.split("/").filter(Boolean).at(-1);
-    if (pathCode) candidates.push(decodeURIComponent(pathCode));
   } catch {
     // The scanned value is not a URL.
   }
-  const normalizedCandidates = candidates.map(normalizeCode);
-  return materialsCatalog.find((item) => normalizedCandidates.includes(normalizeCode(item.code)) || normalizedCandidates.includes(normalizeCode(item.name)));
+  // Labels often wrap the product code in descriptive text. Match whole tokens only.
+  for (const candidate of [...candidates]) {
+    candidates.push(...candidate.split(/[^\p{L}\p{N}-]+/u).filter(Boolean));
+  }
+  const normalizedCandidates = new Set(candidates.map(normalizeCode));
+  return materialsCatalog.find((item) => normalizedCandidates.has(normalizeCode(item.code)) || normalizedCandidates.has(normalizeCode(item.name)));
 }

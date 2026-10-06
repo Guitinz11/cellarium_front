@@ -1,6 +1,28 @@
-export const requests: Array<{ id: string; order: string; requester: string; sector: string; date: string; status: string; items: string }> = [];
+export type MaterialRecord = {
+  name: string;
+  code: string;
+  quantity: number;
+  minimum: number;
+  unit: string;
+  category: string;
+  specification: string;
+};
 
-export const sectors = ["Montagem e Pintura", "Usinagem e Solda", "Corte e Dobra e Estamparia", "Assistência Técnica", "Projetos e Engenharia", "Setor Comercial", "Qualidade e Testes"];
+export type LocalRequestRecord = {
+  id: string;
+  order: string;
+  requester: string;
+  sector: string;
+  date: string;
+  status: string;
+  items: string;
+};
+
+export const requests: LocalRequestRecord[] = [];
+export const sectors: string[] = [];
+export const seededMaterials: MaterialRecord[] = [];
+export const stock: MaterialRecord[] = [];
+export const materialsCatalog: MaterialRecord[] = [];
 
 export const navItems = [
   { label: "Painel Geral", href: "/painel", icon: "layout" },
@@ -13,64 +35,3 @@ export const navItems = [
   { label: "Inventário", href: "/inventario", icon: "inventory" },
   { label: "Análises", href: "/analises", icon: "analytics" },
 ];
-
-export const seededMaterials = [
-  {"name": "Chapa de Aço Carbono SAE 1020 - 1/8\" (3.17mm)", "code": "MP-001", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Espessura 1/8\" (3,17mm) — uso em estruturas e componentes metálicos gerais"},
-  {"name": "Chapa de Aço Carbono SAE 1020 - 1/4\" (6.35mm)", "code": "MP-002", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Espessura 1/4\" (6,35mm) — uso em estruturas e componentes metálicos gerais"},
-  {"name": "Chapa de Aço Inox AISI 304 - Escovada 1.5mm", "code": "MP-003", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Inox AISI 304, acabamento escovado, espessura 1,5mm"},
-  {"name": "Chapa de Alumínio Naval 5052 H32 - 2.0mm", "code": "MP-004", "quantity": 50, "minimum": 10, "unit": "Chapa", "category": "Matérias-primas, metais e perfis", "specification": "Liga 5052 H32, espessura 2,0mm, aplicação naval/estrutural"},
-  {"name": "Viga U de Aço Carbono - 3\"", "code": "MP-005", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Perfil U 3\", aço carbono"},
-  {"name": "Perfil Tubular Quadrado Aço Carbono 40x40x2.0mm", "code": "MP-007", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Seção 40x40mm, parede 2,0mm"},
-  {"name": "Barra Redonda de Aço SAE 1045 - Diâmetro 1\"", "code": "MP-012", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Diâmetro 1\", aço SAE 1045"},
-  {"name": "Barra Redonda de Aço SAE 4140 - Diâmetro 2\"", "code": "MP-013", "quantity": 50, "minimum": 10, "unit": "Barra", "category": "Matérias-primas, metais e perfis", "specification": "Diâmetro 2\", aço SAE 4140"},
-  {"name": "Arame de Solda MIG/MAG Solid ER70S-6 - 1.2mm", "code": "CS-001", "quantity": 50, "minimum": 10, "unit": "Rolo", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 1,2mm, processo MIG/MAG"},
-  {"name": "Eletrodo Revestido AWS E6013 - 2.50mm", "code": "CS-004", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 2,50mm, uso geral"},
-  {"name": "Eletrodo Revestido AWS E7018 - 3.25mm", "code": "CS-005", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Consumíveis de solda e corte térmico", "specification": "Bitola 3,25mm, alta resistência mecânica"},
-  {"name": "Bico de Contato MIG M6 x 28 x 1.2mm", "code": "CS-012", "quantity": 0, "minimum": 10, "unit": "Unidade", "category": "Consumíveis de solda e corte térmico", "specification": "Rosca M6, comprimento 28mm, para arame 1,2mm"},
-  {"name": "Antirrespingo de Solda em Spray", "code": "CS-017", "quantity": 50, "minimum": 10, "unit": "Lata", "category": "Consumíveis de solda e corte térmico", "specification": "Uso em processos de solda MIG/MAG"},
-  {"name": "Disco de Corte para Aço Carbono 4.1/2\" x 1.0mm", "code": "AB-001", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Diâmetro 4.1/2\", espessura 1,0mm"},
-  {"name": "Disco Flap Grão 40 - Zircônio 4.1/2\"", "code": "AB-004", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Grão 40, zircônio, diâmetro 4.1/2\""},
-  {"name": "Broca helicoidal HSS DIN 338 - 3.0mm", "code": "AB-010", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Diâmetro 3,0mm, aço rápido HSS"},
-  {"name": "Inserto de Metal Duro WNMG 080408", "code": "AB-014", "quantity": 3, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "Geometria WNMG 080408, uso em torneamento"},
-  {"name": "Fresa Metal Duro Topo Reto 4 Facas - Ø 10mm", "code": "AB-019", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Abrasivos, corte e usinagem", "specification": "4 facas, diâmetro 10mm"},
-  {"name": "Parafuso Sextavado RI Grau 5 - 1/4\" x 1\" UNC", "code": "FX-001", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Rosca inteira, grau 5, 1/4\" x 1\" UNC"},
-  {"name": "Parafuso Sextavado RP Classe 8.8 - M10 x 50mm", "code": "FX-002", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Rosca parcial, classe 8.8, M10 x 50mm"},
-  {"name": "Parafuso Allen Cabeça Cilíndrica M6 x 20mm", "code": "FX-004", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Sextavado interno, M6 x 20mm"},
-  {"name": "Porca Sextavada Leve Zincada 1/4\" UNC", "code": "FX-008", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Zincada, rosca 1/4\" UNC"},
-  {"name": "Arruela Lisa Zincada DIN 125 - M8", "code": "FX-012", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "DIN 125, M8, zincada"},
-  {"name": "Rebite de Repuxo Alumínio/Aço 4.0 x 12mm", "code": "FX-017", "quantity": 50, "minimum": 10, "unit": "Caixa", "category": "Elementos de fixação", "specification": "Diâmetro 4,0mm, comprimento 12mm"},
-  {"name": "Óleo Solúvel Semi-Sintético para Usinagem", "code": "QM-001", "quantity": 50, "minimum": 10, "unit": "Galão", "category": "Químicos, lubrificantes e MRO", "specification": "Uso em processos de usinagem"},
-  {"name": "Graxa de Lítio NLGI 2", "code": "QM-003", "quantity": 50, "minimum": 10, "unit": "Bisnaga", "category": "Químicos, lubrificantes e MRO", "specification": "Consistência NLGI 2, lubrificação geral"},
-  {"name": "Óleo Lubrificante Industrial ISO VG 68", "code": "QM-004", "quantity": 50, "minimum": 10, "unit": "Galão", "category": "Químicos, lubrificantes e MRO", "specification": "Viscosidade ISO VG 68"},
-  {"name": "Desengraxante Industrial Alcalino", "code": "QM-007", "quantity": 50, "minimum": 10, "unit": "Bombona", "category": "Químicos, lubrificantes e MRO", "specification": "Limpeza de peças e superfícies metálicas"},
-  {"name": "Trava Química de Alta Torque", "code": "QM-013", "quantity": 50, "minimum": 10, "unit": "Frasco", "category": "Químicos, lubrificantes e MRO", "specification": "Fixação roscada de alta resistência"},
-  {"name": "Desengripante e Lubrificante em Spray", "code": "QM-017", "quantity": 50, "minimum": 10, "unit": "Lata", "category": "Químicos, lubrificantes e MRO", "specification": "Uso geral em manutenção"},
-  {"name": "Máscara de Solda Eletrônica de Escurecimento Automático", "code": "EP-001", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Escurecimento automático, uso em soldagem"},
-  {"name": "Avental de Raspa de Couro", "code": "EP-004", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Proteção térmica para soldagem"},
-  {"name": "Luva de Raspa Cano Longo", "code": "EP-008", "quantity": 50, "minimum": 10, "unit": "Par", "category": "Equipamentos de Proteção Individual", "specification": "Proteção térmica e mecânica"},
-  {"name": "Óculos de Proteção Incolor", "code": "EP-012", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Lente incolor, proteção ocular"},
-  {"name": "Respirador Semifacial PFF2", "code": "EP-016", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Equipamentos de Proteção Individual", "specification": "Filtro PFF2, proteção respiratória"},
-  {"name": "Botina de Segurança", "code": "EP-018", "quantity": 50, "minimum": 10, "unit": "Par", "category": "Equipamentos de Proteção Individual", "specification": "Uso industrial, com biqueira de proteção"},
-  {"name": "Estopa Branca para Limpeza Mecânica", "code": "UT-001", "quantity": 50, "minimum": 10, "unit": "Kg", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Limpeza geral de máquinas e equipamentos"},
-  {"name": "Fita Veda Rosca PTFE", "code": "UT-005", "quantity": 50, "minimum": 10, "unit": "Rolo", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Vedação de roscas hidráulicas/pneumáticas"},
-  {"name": "Abraçadeira de Nylon", "code": "UT-009", "quantity": 50, "minimum": 10, "unit": "Pacote", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Fixação de cabos e mangueiras"},
-  {"name": "Engate Rápido Pneumático Macho", "code": "UT-011", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Conexão pneumática rápida"},
-  {"name": "Trena Métrica Manual com Trava - 5 Metros", "code": "UT-018", "quantity": 50, "minimum": 10, "unit": "Unidade", "category": "Utensílios de almoxarifado, manutenção e operação", "specification": "Medição manual, trava automática, 5 metros"},
-  {"name": "Roda de Borracha 10200 BIN 3/4 (10 pol.)", "code": "6687", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, referência 10200 BIN, eixo 3/4 pol., diâmetro 10 pol."},
-  {"name": "Roda de Chapa 16 - 1210B1 Roda RM 6", "code": "4226", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de chapa 16, referência 1210B1, roda RM 6"},
-  {"name": "Roda de Borracha 200 x 50 x 19 mm (8 pol.)", "code": "7078", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, dimensões 200 x 50 x 19 mm"},
-  {"name": "Roda de Poliuretano Amarelo Nº 01", "code": "9058", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de poliuretano amarelo, modelo nº 01"},
-  {"name": "Rodízio GLE 414 NPN - 4 pol. giratório", "code": "129", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio giratório GLE 414 NPN, 4 pol."},
-  {"name": "Rodízio FLE 312 NPP - 3 pol. fixo", "code": "120", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio fixo FLE 312 NPP, 3 pol."},
-  {"name": "Rodízio GLE 312 NPP - 3 pol. giratório Marcon", "code": "127", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Rodízio giratório GLE 312 NPP, 3 pol., modelo Marcon"},
-  {"name": "Garfo QGMS 3508 R giratório", "code": "173", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Garfo giratório QGMS 3508 R"},
-  {"name": "Garfo QGMX 62 para plataforma elevadora", "code": "7988", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Garfo QGMX 62, aplicação em plataforma elevadora"},
-  {"name": "Guia de Ferro Fundido Nº 06", "code": "17940", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Guia de ferro fundido, modelo nº 06"},
-  {"name": "Pneu Maciço 8 pol.", "code": "1794", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 8 pol."},
-  {"name": "Pneu Maciço 10 pol.", "code": "1796", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 10 pol."},
-  {"name": "Pneu Maciço 9 pol.", "code": "1795", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Pneu maciço, diâmetro 9 pol."},
-  {"name": "Roda de Borracha 9200 BIN 3/4 (9 pol.)", "code": "5746", "quantity": 0, "minimum": 1, "unit": "Unidade", "category": "Rodízios, rodas e componentes", "specification": "Roda de borracha, referência 9200 BIN, eixo 3/4 pol., diâmetro 9 pol."},
-];
-
-export const stock = seededMaterials;
-export const materialsCatalog = seededMaterials;

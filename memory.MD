@@ -191,3 +191,13 @@
 - Em `components/sector-stock.tsx`, OS com status `Aprovado` também aparecem para fechamento: a aprovação pela fila usava esse status, enquanto a aprovação pelo painel usava `Em andamento`. A seção “Fechar OS e devolver sobras” foi posicionada acima dos indicadores.
 - Fechar a OS continua exigindo entrega confirmada. O formulário valida sobras entre zero e a quantidade de cada item; o registro local mantém `closedRequestIds` para evitar crédito duplicado. A conclusão e a confirmação de sucesso aparecem após salvar as sobras no estoque do setor.
 - Validados: aprovação pela fila → confirmação de entrega → fechamento pelo funcionário; rejeição de quantidade excedente; persistência sem duplicação ao recarregar; bloqueio antes da entrega. Sequência visual conferida em 390, 768, 1440 e 1920 px e com movimento reduzido. Axe-core passou para login, estoque e modal em 390/768/1440 px nos dois temas; lint e build com TypeScript passaram.
+
+### Catálogo de seleção do requisitante (02/10/2026)
+
+- `/materiais` usa `components/material-selection.tsx`, extraído de `components/warehouse.tsx`. Mantém busca normalizada, paginação de 12 itens, QR, seleção e contratos de URL existentes; estoque, categorias e unidades vêm dos dados locais.
+- O catálogo usa os tokens de superfície, borda, raio, marca, status e sombra existentes em `components/design-system.css`; não foram criados tokens novos. Cards usam ícones Lucide, quantidade inline e resumo fixo da seleção. O tema escuro herda os tokens compartilhados.
+- Estoque baixo mantém a classificação do catálogo: saldo positivo menor ou igual ao mínimo cadastrado. Zero permanece indisponível; não existe regra/campo para reservado.
+- O stepper não permite exceder o saldo atual. `useInventoryItems` preserva a referência do snapshot enquanto o `localStorage` não muda, permitindo memoizar cada card durante seleção.
+- No celular, filtros ficam em bottom sheet com a mesma implementação de foco/Escape, e categorias usam chips com rolagem horizontal. A navegação fixa reserva o espaço da barra de seleção. Em desenvolvimento, o CSS também reserva a área do launcher Next.js no canto inferior esquerdo sem desativá-lo.
+- `lib/request-storage.ts` mantém um snapshot de servidor estável para `useSyncExternalStore`; `components/product-qr-picker.tsx` importa `materialsCatalog` como valor, pois o usa no fallback.
+- A tela não tem biblioteca i18n nem carregamento assíncrono de catálogo. Os textos seguem pt-BR; `app/materiais/loading.tsx` oferece skeleton em cards durante navegações, e o erro continua no boundary global `app/error.tsx`.
