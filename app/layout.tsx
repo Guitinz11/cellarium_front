@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import VisualEffects from "@/components/visual-effects";
+import AppRouteView from "@/components/app-route-view";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <VisualEffects />
-        {children}
+        <AppRouteView>{children}</AppRouteView>
       </body>
     </html>
   );

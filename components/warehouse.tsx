@@ -20,7 +20,7 @@ import NotificationsLive from "@/components/employee-notifications-live";
 import RequestConversationsLive from "@/components/request-conversations-live";
 import AccessDenied from "@/components/access-denied";
 import { RequesterLayout, Sidebar, Topbar } from "@/components/product-shell";
-import { ApiError, ApiUnavailableError, clearApiSession, getAccessToken, getCurrentUser, normalizeUserProfile } from "@/lib/warehouse-api";
+import { ApiError, ApiUnavailableError, clearApiSession, getAccessToken, getCurrentUser, normalizeUserProfile, type NormalizedUserRole } from "@/lib/warehouse-api";
 
 const requesterUnavailable: Record<string, ReactNode> = {
   "/chat": <RequestConversationsLive/>,
@@ -42,17 +42,33 @@ const warehousePages: Record<string, ReactNode> = {
   "/conversas": <RequestConversationsLive/>,
 };
 
+const requesterRoutes = new Set(["/materiais", "/pedido", "/acompanhar", "/meu-estoque", "/chat", "/notificacoes"]);
+let validatedSession: { token: string; role: NormalizedUserRole } | null = null;
+
+function roleCanAccessPath(role: NormalizedUserRole, pathname: string) {
+  return role !== "desconhecido" && (requesterRoutes.has(pathname) ? role === "funcionario" : role === "almoxarife");
+}
+
 export default function WarehouseScreen() {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [access, setAccess] = useState<{ pathname: string; state: "checking" | "allowed" | "unavailable" }>({ pathname: "", state: "checking" });
+  const [access, setAccess] = useState<{ pathname: string; state: "checking" | "allowed" | "unavailable"; role: NormalizedUserRole | null }>(() => {
+    const token = getAccessToken();
+    const role = validatedSession?.token === token ? validatedSession.role : null;
+    return role && roleCanAccessPath(role, pathname)
+      ? { pathname, state: "allowed", role }
+      : { pathname: "", state: "checking", role: null };
+  });
 
   useEffect(() => {
     if (pathname === "/" || pathname.startsWith("/login")) return;
     let active = true;
     const reject = (clearSession: boolean) => {
-      if (clearSession) clearApiSession();
+      if (clearSession) {
+        validatedSession = null;
+        clearApiSession();
+      }
       router.replace("/acesso-negado");
     };
     const token = getAccessToken();
@@ -65,23 +81,24 @@ export default function WarehouseScreen() {
     void getCurrentUser().then((user) => {
       if (!active) return;
       const role = normalizeUserProfile(user.perfil);
-      const requesterRoute = ["/materiais", "/pedido", "/acompanhar", "/meu-estoque", "/chat", "/notificacoes"].includes(pathname);
-      if (role === "desconhecido" || (requesterRoute && role !== "funcionario") || (!requesterRoute && role !== "almoxarife")) {
+      if (!roleCanAccessPath(role, pathname)) {
         reject(false);
         return;
       }
-      setAccess({ pathname, state: "allowed" });
+      validatedSession = { token, role };
+      setAccess({ pathname, state: "allowed", role });
     }).catch((cause: unknown) => {
       if (!active) return;
       if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+        validatedSession = null;
         reject(true);
         return;
       }
       if (cause instanceof ApiUnavailableError) {
-        setAccess({ pathname, state: "unavailable" });
+        setAccess({ pathname, state: "unavailable", role: null });
         return;
       }
-      setAccess({ pathname, state: "unavailable" });
+      setAccess({ pathname, state: "unavailable", role: null });
     });
     return () => {
       active = false;
@@ -90,16 +107,17 @@ export default function WarehouseScreen() {
   }, [pathname, router]);
 
   if (pathname === "/" || pathname.startsWith("/login")) return <LoginPage/>;
-  if (access.pathname !== pathname || access.state === "checking") {
+  const cachedRoutePermission = access.state === "allowed" && access.role !== null && Boolean(getAccessToken()) && roleCanAccessPath(access.role, pathname);
+  if ((access.pathname !== pathname || access.state === "checking") && !cachedRoutePermission) {
     return <main className="access-checking" role="status" aria-live="polite"><span className="access-checking-mark" aria-hidden="true"/><p>Validando seu acessoâ€¦</p></main>;
   }
-  if (access.state === "unavailable") return <AccessDenied unavailable/>;
-  if (access.state !== "allowed") return null;
-  if (pathname === "/materiais") return <RequesterLayout><MaterialSelection/></RequesterLayout>;
-  if (pathname === "/pedido") return <RequesterLayout><RequestForm/></RequesterLayout>;
-  if (pathname === "/acompanhar") return <RequesterLayout><RequestSearch/></RequesterLayout>;
+  if (access.pathname === pathname && access.state === "unavailable") return <AccessDenied unavailable/>;
+  if (access.state !== "allowed" && !cachedRoutePermission) return null;
+  if (pathname === "/materiais") return <RequesterLayout><div key={pathname} className="route-page-transition"><MaterialSelection/></div></RequesterLayout>;
+  if (pathname === "/pedido") return <RequesterLayout><div key={pathname} className="route-page-transition"><RequestForm/></div></RequesterLayout>;
+  if (pathname === "/acompanhar") return <RequesterLayout><div key={pathname} className="route-page-transition"><RequestSearch/></div></RequesterLayout>;
   if (pathname === "/chat" || pathname === "/notificacoes" || pathname === "/meu-estoque") {
-    return <RequesterLayout>{requesterUnavailable[pathname]}</RequesterLayout>;
+    return <RequesterLayout><div key={pathname} className="route-page-transition">{requesterUnavailable[pathname]}</div></RequesterLayout>;
   }
 
   return <div className="warehouse-app">
@@ -108,7 +126,7 @@ export default function WarehouseScreen() {
     <div className="shell-main" inert={menuOpen}>
       <Topbar menuOpen={menuOpen} onMenu={() => setMenuOpen(true)}/>
       <main id="main-content" tabIndex={-1} className="warehouse-content">
-        {warehousePages[pathname] ?? <OperationsDashboard/>}
+        <div key={pathname} className="route-page-transition">{warehousePages[pathname] ?? <OperationsDashboard/>}</div>
       </main>
       <footer className="product-footer"><span>Marcon <span aria-hidden="true">/</span> GestÃ£o de materiais</span><span>Til Marcon</span></footer>
     </div>
