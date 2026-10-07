@@ -35,22 +35,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [introReady, setIntroReady] = useState(false);
-  const [introComplete, setIntroComplete] = useState(false);
-
-  useEffect(() => {
-    if (!introReady) return;
-    const completion = window.setTimeout(() => setIntroComplete(true), 4600);
-    return () => window.clearTimeout(completion);
-  }, [introReady]);
 
   useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
       if (motion.matches) {
         video.current?.pause();
-        setIntroReady(true);
-      } else void video.current?.play().catch(() => setIntroReady(true));
+      } else void video.current?.play().catch(() => undefined);
     };
     update();
     motion.addEventListener("change", update);
@@ -138,13 +129,11 @@ export default function LoginPage() {
   return (
     <main className="login-shell grid min-h-[100svh] lg:grid-cols-[1.05fr_1fr]">
       <section
-        className={`login-showcase relative overflow-hidden ${introReady ? "intro-ready" : ""} ${introComplete ? "intro-complete" : ""}`}
+        className="login-showcase relative overflow-hidden"
         aria-label="Apresentação Marcon"
       >
         <video
           ref={video}
-          onPlaying={() => setIntroReady(true)}
-          onError={() => setIntroReady(true)}
           className="absolute inset-0 h-full w-full object-cover"
           muted
           loop
@@ -170,37 +159,37 @@ export default function LoginPage() {
             </span>
           </div>
           <div className="login-copy max-w-xl py-3 lg:pb-4">
-            <p className="login-kicker login-reveal login-reveal-1 mb-5 hidden sm:block">
+            <p className="login-kicker mb-5 hidden sm:block">
               Pessoas, materiais e produção.
             </p>
             <h1>
-              <span className="login-title-line login-reveal login-reveal-2">
+              <span className="login-title-line">
                 Precisão em cada
               </span>
-              <span className="login-title-accent login-reveal login-reveal-3">
+              <span className="login-title-accent">
                 movimento.
               </span>
             </h1>
-            <p className="login-reveal login-reveal-4 mt-6 hidden max-w-md text-sm leading-7 text-[#d0dced] sm:block">
+            <p className="mt-6 hidden max-w-md text-sm leading-7 text-[#d0dced] sm:block">
               Da requisição à entrega, uma operação mais simples. Tudo o que sua
               equipe precisa, no lugar certo.
             </p>
             <div className="login-feature-list">
-              <div className="login-reveal login-reveal-5">
+              <div>
                 <ClipboardList size={20} />
                 <strong>Solicite materiais</strong>
               </div>
-              <div className="login-reveal login-reveal-6">
+              <div>
                 <Boxes size={20} />
                 <strong>Organize o estoque</strong>
               </div>
-              <div className="login-reveal login-reveal-7">
+              <div>
                 <PackageCheck size={20} />
                 <strong>Acompanhe a entrega</strong>
               </div>
             </div>
           </div>
-          <p className="login-kicker login-mobile-caption login-reveal login-reveal-1 mt-4 text-[9px] sm:hidden">
+          <p className="login-kicker login-mobile-caption mt-4 text-[9px] sm:hidden">
             Gestão de materiais · Portal Marcon
           </p>
         </div>
