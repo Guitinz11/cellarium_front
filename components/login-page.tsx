@@ -134,12 +134,11 @@ export default function LoginPage() {
       >
         <video
           ref={video}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full bg-[#152844] object-cover"
           muted
           loop
           playsInline
           preload="metadata"
-          poster="/logo.png"
           aria-hidden="true"
         >
           <source src="/video_tela_login.mp4" type="video/mp4" />
@@ -234,7 +233,7 @@ export default function LoginPage() {
               <span className="mb-2 block text-xs font-medium text-slate-700">
                 Login cadastrado
               </span>
-              <span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5">
+              <span className="login-input-control flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5">
                 <UserRound size={17} className="shrink-0 text-slate-400" />
                 <input
                   id="login-identifier"
@@ -259,7 +258,7 @@ export default function LoginPage() {
               <span className="mb-2 block text-xs font-medium text-slate-700">
                 Senha
               </span>
-              <span className="flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5">
+              <span className="login-input-control flex h-12 items-center gap-3 rounded-lg border border-slate-300 px-3.5">
                 <LockKeyhole size={17} className="shrink-0 text-slate-400" />
                 <input
                   id="login-password"

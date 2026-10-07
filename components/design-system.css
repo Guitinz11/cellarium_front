@@ -247,6 +247,9 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .login-video-wash { position: absolute; inset: auto 0 0; height: 75%; pointer-events: none; background: linear-gradient(180deg, transparent 0%, rgb(52 76 107 / 18%) 18%, rgb(52 76 107 / 56%) 36%, rgb(47 69 99 / 82%) 62%, rgb(43 65 94 / 92%) 100%); transform: translateY(33.333%); }
 .login-year { border-radius: 4px; padding: 6px 8px; background: rgb(17 36 62 / 78%); }
 .login-form-side { background: var(--surface); } .login-logo { display: inline-flex; width: fit-content; padding: 12px 16px; border-radius: 8px; background: #fff; }
+.login-input-control { transition: border-color 160ms ease, box-shadow 160ms ease; }
+.login-input-control:focus-within { border-color: var(--brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent); }
+.login-input-control input:focus-visible { outline: none; }
 .login-kicker { color: #c8d7ed; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; }
 .login-showcase h1 { max-width: 520px; font-size: clamp(40px, 4.5vw, 68px); font-weight: 500; line-height: 1.07; letter-spacing: -.055em; } .login-title-line, .login-title-accent { display: block; } .login-title-accent { color: #c2d5ef; }
 .login-feature-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 44px; padding-top: 24px; border-top: 1px solid rgb(255 255 255 / 20%); } .login-feature-list strong { display: block; margin-top: 9px; font-size: 11px; font-weight: 500; } .login-feature-list svg { color: #b1c9ed; }
