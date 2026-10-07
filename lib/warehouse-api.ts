@@ -112,10 +112,46 @@ export type ApiStockItem = {
   situacao: string;
 };
 
-export type ApiSectorStock = { id: number; setor_id: number; material_id: number; codigo: string; material: string; unidade_medida_id: number; unidade_sigla: string; quantidade_atual: number; updated_at: string };
-export type ApiSectorMovement = { id: number; material_id: number; codigo: string; material: string; tipo: string; quantidade: number; saldo_anterior: number; saldo_posterior: number; observacao: string | null; created_at: string };
-export type ApiMessage = { id: number; requisicao_id: number; usuario_id: number; usuario: string; texto: string; created_at: string };
-export type ApiNotification = { id: number; requisicao_id: number | null; tipo: string; titulo: string; mensagem: string; lida: boolean; created_at: string };
+export type ApiSectorStock = {
+  id: number;
+  setor_id: number;
+  material_id: number;
+  codigo: string;
+  material: string;
+  unidade_medida_id: number;
+  unidade_sigla: string;
+  quantidade_atual: number;
+  updated_at: string;
+};
+export type ApiSectorMovement = {
+  id: number;
+  material_id: number;
+  codigo: string;
+  material: string;
+  tipo: string;
+  quantidade: number;
+  saldo_anterior: number;
+  saldo_posterior: number;
+  observacao: string | null;
+  created_at: string;
+};
+export type ApiMessage = {
+  id: number;
+  requisicao_id: number;
+  usuario_id: number;
+  usuario: string;
+  texto: string;
+  created_at: string;
+};
+export type ApiNotification = {
+  id: number;
+  requisicao_id: number | null;
+  tipo: string;
+  titulo: string;
+  mensagem: string;
+  lida: boolean;
+  created_at: string;
+};
 
 export type ApiMaterial = {
   id: number;
@@ -140,22 +176,30 @@ export type ApiUser = {
 
 export type NormalizedUserRole = "funcionario" | "almoxarife" | "desconhecido";
 
-export function normalizeUserProfile(profile?: string | null): NormalizedUserRole {
+export function normalizeUserProfile(
+  profile?: string | null,
+): NormalizedUserRole {
   const candidate = (profile ?? "").trim();
   if (!candidate) return "desconhecido";
 
   const upper = candidate.toLocaleUpperCase("en-US");
-  if (["FUNCIONARIO", "SOLICITANTE", "REQUISITANTE"].includes(upper)) return "funcionario";
+  if (["FUNCIONARIO", "SOLICITANTE", "REQUISITANTE"].includes(upper))
+    return "funcionario";
   if (["ALMOXARIFE", "ADMIN", "GESTOR"].includes(upper)) return "almoxarife";
   return "desconhecido";
 }
 
-const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+const apiUrl = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+).replace(/\/$/, "");
 const accessTokenKey = "cellarium-access-token";
 const userKey = "cellarium-api-user";
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -169,14 +213,21 @@ export class ApiUnavailableError extends Error {
 }
 
 export function getAccessToken() {
-  return typeof window === "undefined" ? "" : window.localStorage.getItem(accessTokenKey) ?? "";
+  return typeof window === "undefined"
+    ? ""
+    : (window.localStorage.getItem(accessTokenKey) ?? "");
 }
 
 export function storeApiSession(token: string, user: ApiUser) {
   const normalizedProfile = normalizeUserProfile(user.perfil);
   window.localStorage.setItem(accessTokenKey, token);
   window.localStorage.setItem(userKey, JSON.stringify(user));
-  window.localStorage.setItem("cellarium-user-role", normalizedProfile === "desconhecido" ? (user.perfil ?? "").trim().toLocaleLowerCase("pt-BR") : normalizedProfile);
+  window.localStorage.setItem(
+    "cellarium-user-role",
+    normalizedProfile === "desconhecido"
+      ? (user.perfil ?? "").trim().toLocaleLowerCase("pt-BR")
+      : normalizedProfile,
+  );
   for (const key of [
     "cellarium-submitted-requests",
     "cellarium-inventory-state",
@@ -191,11 +242,15 @@ export function storeApiSession(token: string, user: ApiUser) {
 export function getStoredApiUser(): ApiUser | null {
   if (typeof window === "undefined") return null;
   try {
-    const value: unknown = JSON.parse(window.localStorage.getItem(userKey) ?? "null");
+    const value: unknown = JSON.parse(
+      window.localStorage.getItem(userKey) ?? "null",
+    );
     if (!value || typeof value !== "object") return null;
     const user = value as Partial<ApiUser>;
-    return typeof user.nome === "string" && typeof user.login === "string" && typeof user.perfil === "string"
-      ? user as ApiUser
+    return typeof user.nome === "string" &&
+      typeof user.login === "string" &&
+      typeof user.perfil === "string"
+      ? (user as ApiUser)
       : null;
   } catch {
     return null;
@@ -221,27 +276,48 @@ function errorMessage(payload: unknown, fallback: string) {
 async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  if (init.body && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
   const token = getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response: Response;
   try {
-    response = await fetch(`${apiUrl}${path}`, { ...init, headers, cache: "no-store" });
+    response = await fetch(`${apiUrl}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
   } catch {
     throw new ApiUnavailableError();
   }
-  if (response.status >= 500) throw new ApiUnavailableError(`A API respondeu com erro ${response.status}.`);
-  const payload: unknown = response.status === 204 ? null : await response.json().catch(() => null);
-  if (response.status === 401 && path !== "/auth/login" && typeof window !== "undefined") {
+  if (response.status >= 500)
+    throw new ApiUnavailableError(
+      `A API respondeu com erro ${response.status}.`,
+    );
+  const payload: unknown =
+    response.status === 204 ? null : await response.json().catch(() => null);
+  if (
+    response.status === 401 &&
+    path !== "/auth/login" &&
+    typeof window !== "undefined"
+  ) {
     window.dispatchEvent(new Event("cellarium-session-invalid"));
   }
-  if (!response.ok) throw new ApiError(errorMessage(payload, `Falha na solicitação (${response.status}).`), response.status);
+  if (!response.ok)
+    throw new ApiError(
+      errorMessage(payload, `Falha na solicitação (${response.status}).`),
+      response.status,
+    );
   return payload as T;
 }
 
 export async function login(login: string, senha: string) {
-  return apiRequest<{ access_token: string; token_type: string; usuario: ApiUser }>("/auth/login", {
+  return apiRequest<{
+    access_token: string;
+    token_type: string;
+    usuario: ApiUser;
+  }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ login, senha }),
   });
@@ -252,17 +328,35 @@ export async function listSectors() {
 }
 
 export async function getCurrentUser() {
-  return apiRequest<ApiUser & { setor: string | null; atendimento_atual: ApiAttendance | null }>("/auth/me");
+  return apiRequest<
+    ApiUser & { setor: string | null; atendimento_atual: ApiAttendance | null }
+  >("/auth/me");
 }
 
-export async function listStock(params: { page?: number; limit?: number; busca?: string } = {}) {
-  const query = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 100) });
+export async function listStock(
+  params: { page?: number; limit?: number; busca?: string } = {},
+) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+  });
   if (params.busca) query.set("busca", params.busca);
-  return apiRequest<{ dados: ApiStockItem[]; total: number; page: number; limit: number }>(`/estoque?${query}`);
+  return apiRequest<{
+    dados: ApiStockItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>(`/estoque?${query}`);
 }
 
-export async function listMaterials(params: { page?: number; limit?: number; busca?: string } = {}) {
-  const query = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 100), ativo: "true" });
+export async function listMaterials(
+  params: { page?: number; limit?: number; busca?: string } = {},
+) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+    ativo: "true",
+  });
   if (params.busca) query.set("busca", params.busca);
   return apiRequest<ApiMaterial[]>(`/materiais?${query}`);
 }
@@ -278,20 +372,58 @@ export async function createRequest(payload: {
 }
 
 export async function listMyRequests() {
-  return apiRequest<{ dados: ApiRequestSummary[]; total: number; page: number; limit: number }>("/requisicoes?limit=100");
+  return apiRequest<{
+    dados: ApiRequestSummary[];
+    total: number;
+    page: number;
+    limit: number;
+  }>("/requisicoes?limit=100");
 }
 
-export async function listSectorStock(sectorId?: number) { return apiRequest<ApiSectorStock[]>(`/estoque-setor${sectorId ? `?setor_id=${sectorId}` : ""}`); }
-export async function listSectorStockHistory(sectorId?: number) { return apiRequest<ApiSectorMovement[]>(`/estoque-setor/historico${sectorId ? `?setor_id=${sectorId}` : ""}`); }
-export async function consumeSectorStock(payload: { material_id: number; quantidade: number; observacao?: string }, key: string) {
-  return apiRequest<{ material_id: number; quantidade_atual: number }>("/estoque-setor/consumos", { method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(payload) });
+export async function listSectorStock(sectorId?: number) {
+  return apiRequest<ApiSectorStock[]>(
+    `/estoque-setor${sectorId ? `?setor_id=${sectorId}` : ""}`,
+  );
 }
-export async function listNotifications() { return apiRequest<ApiNotification[]>("/notificacoes"); }
-export async function markNotificationRead(id: number) { return apiRequest<{ id: number; lida: boolean }>(`/notificacoes/${id}/lida`, { method: "PATCH" }); }
-export async function markAllNotificationsRead() { return apiRequest<{ atualizadas: number }>("/notificacoes/lidas", { method: "PATCH" }); }
-export async function listRequestMessages(id: number) { return apiRequest<ApiMessage[]>(`/requisicoes/${id}/mensagens`); }
+export async function listSectorStockHistory(sectorId?: number) {
+  return apiRequest<ApiSectorMovement[]>(
+    `/estoque-setor/historico${sectorId ? `?setor_id=${sectorId}` : ""}`,
+  );
+}
+export async function consumeSectorStock(
+  payload: { material_id: number; quantidade: number; observacao?: string },
+  key: string,
+) {
+  return apiRequest<{ material_id: number; quantidade_atual: number }>(
+    "/estoque-setor/consumos",
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": key },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+export async function listNotifications() {
+  return apiRequest<ApiNotification[]>("/notificacoes");
+}
+export async function markNotificationRead(id: number) {
+  return apiRequest<{ id: number; lida: boolean }>(`/notificacoes/${id}/lida`, {
+    method: "PATCH",
+  });
+}
+export async function markAllNotificationsRead() {
+  return apiRequest<{ atualizadas: number }>("/notificacoes/lidas", {
+    method: "PATCH",
+  });
+}
+export async function listRequestMessages(id: number) {
+  return apiRequest<ApiMessage[]>(`/requisicoes/${id}/mensagens`);
+}
 export async function sendRequestMessage(id: number, texto: string) {
-  return apiRequest<ApiMessage>(`/requisicoes/${id}/mensagens`, { method: "POST", body: JSON.stringify({ texto }) });
+  return apiRequest<ApiMessage>(`/requisicoes/${id}/mensagens`, {
+    method: "POST",
+    body: JSON.stringify({ texto }),
+  });
 }
 
 export async function getActiveAttendance() {
@@ -311,16 +443,27 @@ export async function startAttendance(setor_id: number) {
 }
 
 export async function listPendingRequests() {
-  return apiRequest<{ dados: ApiPendingRequest[]; total: number; page: number; limit: number }>("/requisicoes/pendentes?limit=100");
+  return apiRequest<{
+    dados: ApiPendingRequest[];
+    total: number;
+    page: number;
+    limit: number;
+  }>("/requisicoes/pendentes?limit=100");
 }
 
 export async function resolveRequestId(identifier: string) {
   const normalized = identifier.trim();
   if (/^\d+$/.test(normalized)) return Number(normalized);
-  const result = await apiRequest<{ dados: Array<{ id: number; numero: string }> }>(
-    `/requisicoes?numero=${encodeURIComponent(normalized)}&limit=10`,
+  const result = await apiRequest<{
+    dados: Array<{ id: number; numero: string }>;
+  }>(`/requisicoes?numero=${encodeURIComponent(normalized)}&limit=10`);
+  return (
+    result.dados.find(
+      (item) =>
+        item.numero.toLocaleLowerCase("pt-BR") ===
+        normalized.toLocaleLowerCase("pt-BR"),
+    )?.id ?? null
   );
-  return result.dados.find((item) => item.numero.toLocaleLowerCase("pt-BR") === normalized.toLocaleLowerCase("pt-BR"))?.id ?? null;
 }
 
 export async function getRequestDetail(identifier: string) {
@@ -330,14 +473,25 @@ export async function getRequestDetail(identifier: string) {
 }
 
 export async function startRequestSeparation(id: number) {
-  return apiRequest<ApiRequestDetail>(`/requisicoes/${id}/iniciar-separacao`, { method: "PATCH" });
+  return apiRequest<ApiRequestDetail>(`/requisicoes/${id}/iniciar-separacao`, {
+    method: "PATCH",
+  });
 }
 
 export async function separateRequest(id: number, idempotencyKey: string) {
-  return apiRequest<{ requisicao_id: number; status: string; itens: Array<{ id: number; material_id: number; quantidade_separada: number; status: string }> }>(
-    `/requisicoes/${id}/separar`,
-    { method: "PATCH", headers: { "Idempotency-Key": idempotencyKey } },
-  );
+  return apiRequest<{
+    requisicao_id: number;
+    status: string;
+    itens: Array<{
+      id: number;
+      material_id: number;
+      quantidade_separada: number;
+      status: string;
+    }>;
+  }>(`/requisicoes/${id}/separar`, {
+    method: "PATCH",
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
 }
 
 export async function concludeRequest(id: number) {
@@ -348,5 +502,10 @@ export async function concludeRequest(id: number) {
 }
 
 export async function listMovements() {
-  return apiRequest<{ dados: ApiMovement[]; total: number; page: number; limit: number }>("/movimentacoes?limit=100");
+  return apiRequest<{
+    dados: ApiMovement[];
+    total: number;
+    page: number;
+    limit: number;
+  }>("/movimentacoes?limit=100");
 }
