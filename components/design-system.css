@@ -51,9 +51,9 @@ input:not([type="checkbox"]):not([type="radio"])[class*="border"], select, texta
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: .9; }
 input:read-only, select:disabled { background-color: var(--surface-soft); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--action); }
-label[class*="border"]:has(input):focus-within, span[class*="border"]:has(input):focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent); }
+label[class*="border"]:not(.login-input-control):has(input):focus-within, span[class*="border"]:not(.login-input-control):has(input):focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent); }
 label[class*="border"] > input, span[class*="border"] > input { background: transparent; box-shadow: none; }
-input:not([type="checkbox"]):not([type="radio"])[class*="border"]:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent); }
+input:not([type="checkbox"]):not([type="radio"]):not(.login-text-field)[class*="border"]:focus, input:not([type="checkbox"]):not([type="radio"]):not(.login-text-field):focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent); }
 .ui-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: var(--radius-control); padding: 0 17px; font-size: 13px; font-weight: 600; line-height: 1.4; }
 .ui-button--primary { border-color: var(--action-hover); background: var(--action); color: #fff; } .ui-button--primary:hover:not(:disabled) { border-color: #153568; background: var(--action-hover); box-shadow: 0 3px 9px rgb(31 65 121 / 14%); }
 .ui-button--secondary { border-color: var(--line-strong); background: var(--surface); color: var(--foreground); } .ui-button--secondary:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
@@ -247,8 +247,7 @@ table td { font-size: 12px; } table tbody tr { transition: background-color 150m
 .login-video-wash { position: absolute; inset: auto 0 0; height: 75%; pointer-events: none; background: linear-gradient(180deg, transparent 0%, rgb(52 76 107 / 18%) 18%, rgb(52 76 107 / 56%) 36%, rgb(47 69 99 / 82%) 62%, rgb(43 65 94 / 92%) 100%); transform: translateY(33.333%); }
 .login-year { border-radius: 4px; padding: 6px 8px; background: rgb(17 36 62 / 78%); }
 .login-form-side { background: var(--surface); } .login-logo { display: inline-flex; width: fit-content; padding: 12px 16px; border-radius: 8px; background: #fff; }
-.login-input-control { transition: border-color 160ms ease, box-shadow 160ms ease; }
-.login-input-control:focus-within { border-color: var(--brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent); }
+.login-input-control:has(.login-text-field:focus-visible) { background-color: color-mix(in srgb, var(--brand) 5%, var(--surface)); }
 .login-input-control input:focus-visible { outline: none; }
 .login-kicker { color: #c8d7ed; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; }
 .login-showcase h1 { max-width: 520px; font-size: clamp(40px, 4.5vw, 68px); font-weight: 500; line-height: 1.07; letter-spacing: -.055em; } .login-title-line, .login-title-accent { display: block; } .login-title-accent { color: #c2d5ef; }

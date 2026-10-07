@@ -245,7 +245,7 @@ export default function LoginPage() {
                     setError("");
                   }}
                   placeholder="Informe seu login"
-                  className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"
+                  className="login-text-field h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"
                 />
               </span>
             </label>
@@ -267,7 +267,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Digite sua senha"
-                  className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"
+                  className="login-text-field h-full min-w-0 flex-1 bg-transparent text-sm text-slate-800"
                 />
                 <button
                   type="button"
