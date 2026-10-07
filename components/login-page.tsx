@@ -50,6 +50,13 @@ export default function LoginPage() {
       const session = await login(loginValue.trim(), password);
       const actualProfile = normalizeUserProfile(session.usuario.perfil);
       const isRequester = actualProfile === "funcionario";
+      if (session.usuario.perfil.trim().toLocaleUpperCase("pt-BR") === "ADMIN") {
+        storeApiSession(session.access_token, session.usuario);
+        window.localStorage.setItem("cellarium-admin-token", session.access_token);
+        window.localStorage.setItem("cellarium-admin-user", JSON.stringify(session.usuario));
+        router.push("/admin");
+        return;
+      }
       if (profile === "funcionario" && !isRequester) {
         setSubmitting(false);
         setError("Este usuário não está cadastrado como funcionário/solicitante no backend.");
