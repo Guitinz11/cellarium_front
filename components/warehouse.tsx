@@ -13,8 +13,8 @@ import WarehouseSeparation from "@/components/warehouse-separation";
 import WarehouseHistory from "@/components/warehouse-history";
 import WarehouseRequestQr from "@/components/warehouse-request-qr";
 import WarehouseInventory from "@/components/inventory-live";
+import PurchasesLive from "@/components/purchases-live";
 import WarehouseProfile from "@/components/warehouse-profile-live";
-import BackendDataUnavailable from "@/components/backend-data-unavailable";
 import SectorStockLive from "@/components/sector-stock-live";
 import NotificationsLive from "@/components/employee-notifications-live";
 import RequestConversationsLive from "@/components/request-conversations-live";
@@ -38,7 +38,7 @@ const warehousePages: Record<string, ReactNode> = {
   "/qrcode": <WarehouseRequestQr/>,
   "/perfil": <WarehouseProfile/>,
   "/estoque-setor": <SectorStockLive warehouse/>,
-  "/compras": <BackendDataUnavailable title="Compras indisponÃ­veis" detail="O backend ainda nÃ£o oferece endpoints para pedidos de compra ou recebimento de materiais. Nenhuma compra local serÃ¡ tratada como registro real."/>,
+  "/compras": <PurchasesLive/>,
   "/conversas": <RequestConversationsLive/>,
 };
 
