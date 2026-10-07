@@ -434,6 +434,16 @@ export async function markAllNotificationsRead() {
     method: "PATCH",
   });
 }
+export async function deleteNotification(id: number) {
+  return apiRequest<{ id: number; apagada: boolean }>(`/notificacoes/${id}`, {
+    method: "DELETE",
+  });
+}
+export async function deleteAllNotifications() {
+  return apiRequest<{ apagadas: number }>("/notificacoes", {
+    method: "DELETE",
+  });
+}
 export async function listRequestMessages(id: number) {
   return apiRequest<ApiMessage[]>(`/requisicoes/${id}/mensagens`);
 }
