@@ -374,8 +374,11 @@ export async function createRequest(payload: {
   });
 }
 
-export async function listMyRequests(params: { status?: string } = {}) {
-  const query = new URLSearchParams({ limit: "100" });
+export async function listMyRequests(params: { status?: string; page?: number; limit?: number } = {}) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+  });
   if (params.status) query.set("status", params.status);
   return apiRequest<{
     dados: ApiRequestSummary[];
@@ -383,6 +386,17 @@ export async function listMyRequests(params: { status?: string } = {}) {
     page: number;
     limit: number;
   }>(`/requisicoes?${query}`);
+}
+
+export async function listAllMyRequests(params: { status?: string } = {}) {
+  const firstPage = await listMyRequests({ ...params, page: 1, limit: 100 });
+  const dados = [...firstPage.dados];
+  for (let page = 2; dados.length < firstPage.total; page += 1) {
+    const nextPage = await listMyRequests({ ...params, page, limit: 100 });
+    dados.push(...nextPage.dados);
+    if (nextPage.dados.length === 0) break;
+  }
+  return { ...firstPage, dados };
 }
 
 export async function closeServiceOrder(
@@ -571,11 +585,26 @@ export async function concludeRequest(id: number) {
   });
 }
 
-export async function listMovements() {
+export async function listMovements(params: { page?: number; limit?: number } = {}) {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 100),
+  });
   return apiRequest<{
     dados: ApiMovement[];
     total: number;
     page: number;
     limit: number;
-  }>("/movimentacoes?limit=100");
+  }>(`/movimentacoes?${query}`);
+}
+
+export async function listAllMovements() {
+  const firstPage = await listMovements({ page: 1, limit: 100 });
+  const dados = [...firstPage.dados];
+  for (let page = 2; dados.length < firstPage.total; page += 1) {
+    const nextPage = await listMovements({ page, limit: 100 });
+    dados.push(...nextPage.dados);
+    if (nextPage.dados.length === 0) break;
+  }
+  return { ...firstPage, dados };
 }

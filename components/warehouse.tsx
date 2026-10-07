@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import LoginPage from "@/components/login-page";
 import OperationsDashboard from "@/components/operations-dashboard-live";
+import RequestAnalytics from "@/components/request-analytics-live";
 import WarehouseQueue from "@/components/warehouse-queue-live";
 import MaterialSelection from "@/components/material-selection-live";
 import RequestForm from "@/components/request-form-live";
@@ -30,7 +31,7 @@ const requesterUnavailable: Record<string, ReactNode> = {
 
 const warehousePages: Record<string, ReactNode> = {
   "/painel": <OperationsDashboard/>,
-  "/analises": <OperationsDashboard/>,
+  "/analises": <RequestAnalytics/>,
   "/fila": <WarehouseQueue/>,
   "/separacao": <WarehouseSeparation/>,
   "/historico": <WarehouseHistory/>,
