@@ -2,10 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
-import { ArrowRight, Package, Search } from "lucide-react";
+import { ArrowRight, Package, Search, X } from "lucide-react";
 import { ApiError, listMaterials, listStock, type ApiMaterial, type ApiStockItem } from "@/lib/warehouse-api";
+import ApiProductQrPicker from "@/components/api-product-qr-picker";
 
- type CatalogRow = ApiMaterial & { saldo: number; minimo: number; unidade: string; categoria: string };
+type CatalogRow = ApiMaterial & { saldo: number; minimo: number; unidade: string; categoria: string };
+
+async function listAllStock() {
+  const firstPage = await listStock({ page: 1, limit: 100 });
+  const pageCount = Math.ceil(firstPage.total / firstPage.limit);
+  if (pageCount <= 1) return firstPage.dados;
+  const remainingPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) => listStock({ page: index + 2, limit: 100 })),
+  );
+  return [...firstPage.dados, ...remainingPages.flatMap((page) => page.dados)];
+}
 
 export default function MaterialSelectionLive() {
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
@@ -13,7 +24,7 @@ export default function MaterialSelectionLive() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [quantities, setQuantities] = useState<Record<number, string>>({});
 
   async function reload() {
     setLoading(true);
@@ -21,10 +32,10 @@ export default function MaterialSelectionLive() {
     try {
       const [materialRows, stockResult] = await Promise.all([
         listMaterials({ limit: 200 }),
-        listStock({ limit: 100 }),
+        listAllStock(),
       ]);
       setMaterials(materialRows);
-      setStock(stockResult.dados);
+      setStock(stockResult);
     } catch (cause) {
       setMaterials([]);
       setStock([]);
@@ -54,26 +65,40 @@ export default function MaterialSelectionLive() {
   const categories = [...new Set(catalog.map((item) => item.categoria).filter(Boolean))];
   const normalizedQuery = search.trim().toLocaleLowerCase("pt-BR");
   const visible = catalog.filter((item) => `${item.descricao} ${item.codigo} ${item.categoria}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery));
-  const selected = Object.entries(quantities).filter(([id, quantity]) => Number(quantity) > 0 && catalog.some((item) => item.id === Number(id)));
+  const selectedCount = Object.keys(quantities).filter((id) => catalog.some((item) => item.id === Number(id))).length;
+  const invalidQuantity = Object.entries(quantities).some(([id, value]) => {
+    const material = catalog.find((item) => item.id === Number(id));
+    const quantity = Number(value);
+    return Boolean(material) && (!Number.isFinite(quantity) || quantity <= 0 || quantity > material!.saldo);
+  });
+  const selected = Object.entries(quantities).flatMap(([id, value]) => {
+    const material = catalog.find((item) => item.id === Number(id));
+    const quantity = Number(value);
+    return material && Number.isFinite(quantity) && quantity > 0 && quantity <= material.saldo
+      ? [{ id: material.id, quantity }]
+      : [];
+  });
   const requestParams = new URLSearchParams();
-  selected.forEach(([id, quantity]) => { requestParams.append("material", id); requestParams.append("qty", String(quantity)); });
+  selected.forEach(({ id, quantity }) => { requestParams.append("material", String(id)); requestParams.append("qty", String(quantity)); });
 
   return <div className="space-y-5">
     <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="ui-eyebrow">Requisição · Materiais</p><h1 className="text-2xl font-semibold text-slate-900">Catálogo do almoxarifado</h1><p className="mt-2 text-sm text-slate-500">Materiais e saldos consultados diretamente no banco.</p></div><span className="text-xs text-slate-500">{catalog.length} materiais</span></header>
     {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><span>{error}</span><button type="button" onClick={() => void reload()} className="font-semibold underline">Tentar novamente</button></div>}
     <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:p-5"><div><h2 className="text-sm font-semibold text-slate-900">Materiais cadastrados</h2><p className="mt-1 text-xs text-slate-500">{categories.length} categorias no resultado atual</p></div><label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-slate-400"><Search size={15}/><input aria-label="Buscar materiais" value={search} onChange={(event) => setSearch(event.target.value)} className="w-full bg-transparent text-xs text-slate-700 outline-none sm:w-64" placeholder="Nome ou código"/></label></div>
+      <div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:p-5"><div><h2 className="text-sm font-semibold text-slate-900">Materiais cadastrados</h2><p className="mt-1 text-xs text-slate-500">{categories.length} categorias no resultado atual</p></div><div className="flex flex-col gap-2 sm:flex-row"><label className="flex h-10 min-w-0 items-center gap-2 rounded-lg border border-slate-200 px-3 text-slate-400"><Search size={15}/><input aria-label="Buscar materiais" value={search} onChange={(event) => setSearch(event.target.value)} className="w-full bg-transparent text-xs text-slate-700 outline-none sm:w-64" placeholder="Nome ou código"/></label><ApiProductQrPicker materials={catalog} onSelect={(material) => { setSearch(material.codigo); if (material.saldo > 0) setQuantities((current) => ({ ...current, [material.id]: Number(current[material.id]) > 0 && Number(current[material.id]) <= material.saldo ? current[material.id] : "1" })); }}/></div></div>
       {loading ? <p role="status" className="border-t border-slate-100 p-6 text-sm text-slate-500">Carregando materiais e saldos…</p> : visible.length ? <ul className="divide-y divide-slate-100">{visible.map((item) => {
-        const selectedQuantity = quantities[item.id] ?? 0;
+        const selectedQuantity = quantities[item.id];
         const available = item.saldo > 0;
-        return <li key={item.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600"><Package size={17}/></span><div className="min-w-0"><p className="text-sm font-semibold text-slate-900">{item.descricao}</p><p className="mt-1 text-[11px] text-slate-500">{item.codigo}{item.categoria ? ` · ${item.categoria}` : ""}</p><p className="mt-1 text-xs text-slate-600">Saldo: {item.saldo} {item.unidade} · Mínimo: {item.minimo} {item.unidade}</p></div></div><div className="flex items-center justify-between gap-3 pl-12 sm:justify-end sm:pl-0"><span className={`text-[11px] font-semibold ${available ? "text-emerald-700" : "text-slate-500"}`}>{available ? "Disponível" : "Sem saldo"}</span>{selectedQuantity ? <div className="flex h-10 items-center rounded-md border border-slate-300"><button type="button" aria-label={`Diminuir ${item.descricao}`} onClick={() => setQuantities((current) => ({ ...current, [item.id]: Math.max(0, selectedQuantity - 1) }))} className="h-10 w-10 text-lg text-slate-700">−</button><output className="min-w-8 text-center text-sm font-semibold tabular-nums">{selectedQuantity}</output><button type="button" aria-label={`Aumentar ${item.descricao}`} disabled={selectedQuantity >= item.saldo} onClick={() => setQuantities((current) => ({ ...current, [item.id]: Math.min(item.saldo, selectedQuantity + 1) }))} className="h-10 w-10 text-lg text-slate-700 disabled:opacity-40">+</button></div> : <button type="button" disabled={!available} onClick={() => setQuantities((current) => ({ ...current, [item.id]: 1 }))} className="min-h-10 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-40">Selecionar</button>}</div></li>;
+        const parsedQuantity = Number(selectedQuantity);
+        const quantityError = selectedQuantity !== undefined && (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0 || parsedQuantity > item.saldo);
+        return <li key={item.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="flex min-w-0 items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600"><Package size={17}/></span><div className="min-w-0"><p className="text-sm font-semibold text-slate-900">{item.descricao}</p><p className="mt-1 text-[11px] text-slate-500">{item.codigo}{item.categoria ? ` · ${item.categoria}` : ""}</p><p className="mt-1 text-xs text-slate-600">Saldo: {item.saldo} {item.unidade} · Mínimo: {item.minimo} {item.unidade}</p></div></div><div className="flex items-center justify-between gap-3 pl-12 sm:justify-end sm:pl-0"><span className={`text-[11px] font-semibold ${available ? "text-emerald-700" : "text-slate-500"}`}>{available ? "Disponível" : "Sem saldo"}</span>{selectedQuantity !== undefined ? <div className="flex items-start gap-1"><div><label className="sr-only" htmlFor={`material-quantity-${item.id}`}>Quantidade de {item.descricao}</label><input id={`material-quantity-${item.id}`} type="number" min="0.001" step="0.001" max={item.saldo} value={selectedQuantity} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))} aria-invalid={quantityError} aria-describedby={quantityError ? `material-quantity-error-${item.id}` : undefined} className="h-10 w-28 rounded-md border border-slate-300 px-2 text-center text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"/></div><button type="button" aria-label={`Remover ${item.descricao} da seleção`} onClick={() => setQuantities((current) => { const next = { ...current }; delete next[item.id]; return next; })} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-rose-50 hover:text-rose-700"><X size={16}/></button>{quantityError && <span id={`material-quantity-error-${item.id}`} className="sr-only">Informe uma quantidade maior que zero e igual ou menor que o saldo disponível.</span>}</div> : <button type="button" disabled={!available} onClick={() => setQuantities((current) => ({ ...current, [item.id]: "1" }))} className="min-h-10 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-40">Selecionar</button>}</div></li>;
       })}</ul> : <div className="border-t border-slate-100 p-8 text-center"><Package size={25} className="mx-auto text-slate-400"/><p className="mt-3 text-sm font-semibold text-slate-800">{error ? "Catálogo indisponível" : "Nenhum material encontrado"}</p><p className="mt-1 text-xs text-slate-500">{error ? "Confira a API, sua sessão e o banco de dados." : "O banco não retornou materiais para esta busca."}</p></div>}
     </section>
-    {selected.length > 0 && <>
+    {selectedCount > 0 && <>
       <div className="catalog-selection-spacer" aria-hidden="true"/>
       <aside className="catalog-selection-bar" aria-label="Resumo da seleção">
-        <p><strong>{selected.length}</strong> {selected.length === 1 ? "material selecionado" : "materiais selecionados"}<span>Confira os itens antes de enviar.</span></p>
-        <Link href={`/pedido?${requestParams.toString()}`} className="ui-button ui-button--primary">Continuar<ArrowRight size={15}/></Link>
+        <p><strong>{selectedCount}</strong> {selectedCount === 1 ? "material selecionado" : "materiais selecionados"}<span>{invalidQuantity ? "Corrija as quantidades antes de continuar." : "Confira os itens antes de enviar."}</span></p>
+        {invalidQuantity || selected.length !== selectedCount ? <button type="button" disabled className="ui-button ui-button--primary">Revise as quantidades</button> : <Link href={`/pedido?${requestParams.toString()}`} className="ui-button ui-button--primary">Continuar<ArrowRight size={15}/></Link>}
       </aside>
     </>}
   </div>;

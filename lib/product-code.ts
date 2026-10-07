@@ -1,14 +1,15 @@
 import { materialsCatalog } from "@/lib/mock-data";
+import type { ApiMaterial } from "@/lib/warehouse-api";
 
 function normalizeCode(value: string) {
   return value.trim().toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-export function findScannedMaterial(rawValue: string) {
+function getCodeCandidates(rawValue: string) {
   const raw = rawValue.trim();
-  if (!raw) return undefined;
+  if (!raw) return new Set<string>();
   const candidates = [raw];
-  const codeKeys = new Set(["code", "codigo", "productcode", "materialcode", "material", "sku", "id", "codigoproduto", "codigomaterial"]);
+  const codeKeys = new Set(["code", "codigo", "productcode", "materialcode", "material", "sku", "id", "codigoproduto", "codigomaterial", "qrcode"]);
   const addValue = (value: unknown) => {
     if (typeof value === "string" || (typeof value === "number" && Number.isFinite(value))) candidates.push(String(value));
   };
@@ -37,6 +38,21 @@ export function findScannedMaterial(rawValue: string) {
   for (const candidate of [...candidates]) {
     candidates.push(...candidate.split(/[^\p{L}\p{N}-]+/u).filter(Boolean));
   }
-  const normalizedCandidates = new Set(candidates.map(normalizeCode));
+  return new Set(candidates.map(normalizeCode));
+}
+
+export function findScannedMaterial(rawValue: string) {
+  const normalizedCandidates = getCodeCandidates(rawValue);
   return materialsCatalog.find((item) => normalizedCandidates.has(normalizeCode(item.code)) || normalizedCandidates.has(normalizeCode(item.name)));
+}
+
+export function findScannedApiMaterial(rawValue: string, materials: readonly ApiMaterial[]) {
+  const normalizedCandidates = getCodeCandidates(rawValue);
+  if (normalizedCandidates.size === 0) return undefined;
+  return materials.find((material) => [
+    material.codigo,
+    material.qr_code ?? "",
+    String(material.id),
+    material.descricao,
+  ].some((value) => normalizedCandidates.has(normalizeCode(value))));
 }

@@ -37,6 +37,7 @@ export type ApiRequestSummary = {
   data_solicitacao: string;
   data_inicio_separacao: string | null;
   data_conclusao: string | null;
+  os_encerrada_at: string | null;
   observacao: string | null;
   quantidade_itens: number;
 };
@@ -50,6 +51,7 @@ export type ApiRequestItem = {
   quantidade_solicitada: number;
   quantidade_separada: number;
   quantidade_atendida: number;
+  quantidade_sobrante: number | null;
   quantidade_pendente: number;
   status: string;
   observacao: string | null;
@@ -68,6 +70,7 @@ export type ApiRequestDetail = {
   data_solicitacao: string;
   data_inicio_separacao: string | null;
   data_conclusao: string | null;
+  os_encerrada_at: string | null;
   observacao: string | null;
   itens: ApiRequestItem[];
 };
@@ -371,13 +374,28 @@ export async function createRequest(payload: {
   });
 }
 
-export async function listMyRequests() {
+export async function listMyRequests(params: { status?: string } = {}) {
+  const query = new URLSearchParams({ limit: "100" });
+  if (params.status) query.set("status", params.status);
   return apiRequest<{
     dados: ApiRequestSummary[];
     total: number;
     page: number;
     limit: number;
-  }>("/requisicoes?limit=100");
+  }>(`/requisicoes?${query}`);
+}
+
+export async function closeServiceOrder(
+  requisitionId: number,
+  itens: Array<{ item_id: number; quantidade_sobrante: number }>,
+) {
+  return apiRequest<ApiRequestDetail>(
+    `/requisicoes/${requisitionId}/encerrar-os`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ itens }),
+    },
+  );
 }
 
 export async function listSectorStock(sectorId?: number) {
@@ -442,13 +460,33 @@ export async function startAttendance(setor_id: number) {
   });
 }
 
-export async function listPendingRequests() {
-  return apiRequest<{
+export async function switchAttendance(setor_id: number) {
+  return apiRequest<ApiAttendance>("/atendimentos/trocar", {
+    method: "POST",
+    body: JSON.stringify({ setor_id }),
+  });
+}
+
+export async function listPendingRequests(options: { todos?: boolean } = {}) {
+  type PendingResult = {
     dados: ApiPendingRequest[];
     total: number;
     page: number;
     limit: number;
-  }>("/requisicoes/pendentes?limit=100");
+  };
+  const query = new URLSearchParams({ limit: "100" });
+  if (options.todos) query.set("todos", "true");
+  const firstPage = await apiRequest<PendingResult>(`/requisicoes/pendentes?${query}&page=1`);
+  if (!options.todos || firstPage.dados.length >= firstPage.total) return firstPage;
+
+  const dados = [...firstPage.dados];
+  for (let page = 2; dados.length < firstPage.total; page += 1) {
+    query.set("page", String(page));
+    const result = await apiRequest<PendingResult>(`/requisicoes/pendentes?${query}`);
+    dados.push(...result.dados);
+    if (result.dados.length === 0) break;
+  }
+  return { ...firstPage, dados };
 }
 
 export async function resolveRequestId(identifier: string) {
