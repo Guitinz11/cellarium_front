@@ -30,7 +30,7 @@ export default function RequestSearchLive() {
     setError("");
     try {
       const result = await listMyRequests();
-      setRequests(result.dados);
+      setRequests(result.dados.filter((request) => !request.os_encerrada_at));
     } catch (cause) {
       setRequests([]);
       setError(cause instanceof ApiError ? cause.message : "Não foi possível carregar suas requisições do banco.");

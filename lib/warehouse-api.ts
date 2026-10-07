@@ -532,6 +532,28 @@ export async function separateRequest(id: number, idempotencyKey: string) {
   });
 }
 
+export async function separateRequestItem(
+  requisitionId: number,
+  itemId: number,
+  idempotencyKey: string,
+) {
+  return apiRequest<{
+    item: {
+      id: number;
+      material_id: number;
+      quantidade_solicitada: number;
+      quantidade_separada: number;
+      quantidade_atendida: number;
+      status: string;
+    };
+    estoque_atual: number;
+    status_requisicao: string;
+  }>(`/requisicoes/${requisitionId}/itens/${itemId}/separar`, {
+    method: "PATCH",
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
+}
+
 export async function concludeRequest(id: number) {
   return apiRequest<ApiRequestDetail>(`/requisicoes/${id}/concluir`, {
     method: "PATCH",
