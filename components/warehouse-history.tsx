@@ -179,7 +179,7 @@ export default function WarehouseHistory() {
         user: movement.usuario,
         before: movement.estoque_anterior,
         after: movement.estoque_posterior,
-        note: movement.observacao ?? "",
+        note: movement.observacao ?? "-",
       })));
       worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
       worksheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF23466B" } };

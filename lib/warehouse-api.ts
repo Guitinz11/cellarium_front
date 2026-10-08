@@ -87,6 +87,7 @@ export type ApiMovement = {
   quantidade: number;
   estoque_anterior: number;
   estoque_posterior: number;
+  observacao?: string | null;
   requisicao_id: number | null;
   setor_id: number | null;
   requisicao_numero?: string | null;
