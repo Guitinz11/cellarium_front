@@ -284,8 +284,10 @@ export default function WarehouseHistory() {
             <div className="flex flex-wrap items-center gap-3"><time className="movement-history-date" dateTime={requestDate}><CalendarClock size={16} aria-hidden="true"/><span><small>{entry.isRequest ? "Requisitada em" : "Registrada em"}</small><strong>{formatDate(requestDate)}</strong></span></time>{entry.isRequest && <Button variant="secondary" onClick={() => void exportRequestPdf(entry)} loading={exportingPdfId === primary.requisicao_id} disabled={exportingPdfId !== null}><FileText size={15}/>Baixar PDF</Button>}</div>
           </header>
           <div className="movement-history-details">
-            <div className="movement-history-employee"><UserRound size={16} aria-hidden="true"/><span><small>Funcionário</small><strong>{employee}</strong></span></div>
-            {entry.isRequest && primary.separador && primary.separador !== employee && <p className="movement-history-operator">Separado por {primary.separador}</p>}
+            <div className="movement-history-people">
+              <div className="movement-history-employee"><UserRound size={16} aria-hidden="true"/><span><small>Funcionário</small><strong>{employee}</strong></span></div>
+              {entry.isRequest && primary.separador && primary.separador !== employee && <p className="movement-history-operator">Separado por {primary.separador}</p>}
+            </div>
             <div className="movement-history-items"><div className="movement-history-items-title"><Package size={16} aria-hidden="true"/><strong>{items.length} {items.length === 1 ? "material retirado" : "materiais retirados"}</strong></div><ul>{items.map((item) => <li key={`${item.material}:${item.unit}`}><span>{item.material}</span><strong>{formatQuantity(item.quantity)}{item.unit ? ` ${item.unit}` : ""}</strong></li>)}</ul></div>
           </div>
         </li>;

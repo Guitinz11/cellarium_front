@@ -455,8 +455,9 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
 .movement-history-date small, .movement-history-employee small { color: var(--muted); font-size: 9px; }
 .movement-history-date strong, .movement-history-employee strong { color: var(--foreground); font-size: 11px; font-weight: 600; }
 .movement-history-details { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(0, 1.3fr); align-items: start; gap: 18px; margin-top: 16px; }
+.movement-history-people { display: grid; align-content: start; gap: 12px; }
 .movement-history-employee { display: flex; align-items: flex-start; gap: 8px; color: var(--brand); }
-.movement-history-operator { grid-column: 1; margin-top: -9px; color: var(--muted); font-size: 10px; }
+.movement-history-operator { margin: -5px 0 0 24px; color: var(--muted); font-size: 10px; }
 .movement-history-items { min-width: 0; }
 .movement-history-items-title { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--brand); }
 .movement-history-items-title strong { color: var(--foreground); font-size: 10px; font-weight: 600; }
@@ -481,7 +482,7 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
   .movement-history-heading { flex-direction: column; gap: 11px; }
   .movement-history-date { align-items: center; }
   .movement-history-details { grid-template-columns: minmax(0, 1fr); gap: 13px; margin-top: 13px; }
-  .movement-history-operator { grid-column: 1; margin-top: -7px; }
+  .movement-history-operator { margin-top: -5px; }
 }
 @media (max-height: 620px) {
   .warehouse-qr-overlay { padding: 10px; }
