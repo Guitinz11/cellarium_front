@@ -72,12 +72,17 @@ export default function WarehouseScreen() {
       }
       router.replace("/acesso-negado");
     };
+    const expireSession = () => {
+      validatedSession = null;
+      clearApiSession();
+      router.replace("/login");
+    };
     const token = getAccessToken();
     if (!token) {
       reject(false);
       return;
     }
-    const onSessionInvalid = () => reject(true);
+    const onSessionInvalid = () => expireSession();
     window.addEventListener("cellarium-session-invalid", onSessionInvalid);
     void getCurrentUser().then((user) => {
       if (!active) return;
@@ -92,7 +97,8 @@ export default function WarehouseScreen() {
       if (!active) return;
       if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
         validatedSession = null;
-        reject(true);
+        if (cause.status === 401) expireSession();
+        else reject(false);
         return;
       }
       if (cause instanceof ApiUnavailableError) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { X } from "lucide-react";
 import { Button, Card, EmptyState, PageHeading } from "@/components/ui";
 import {
   ApiError,
@@ -159,7 +160,8 @@ export default function RequestConversationsLive() {
           </div>
         </aside>
         <section className="flex min-h-[28rem] min-w-0 flex-col">
-          <div className="border-b border-slate-200 px-4 py-3">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+            <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">
               {active
                 ? `${active.numero} · ${active.setor.nome}`
@@ -170,6 +172,8 @@ export default function RequestConversationsLive() {
                 ? `Solicitante: ${active.solicitante} · ${active.status.replaceAll("_", " ")}`
                 : "As mensagens ficam vinculadas à requisição."}
             </p>
+            </div>
+            {active && <button type="button" onClick={() => { setSelected(null); setMessages([]); setDraft(""); }} aria-label="Fechar conversa" title="Fechar conversa" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"><X size={18}/></button>}
           </div>
           <div
             aria-live="polite"
