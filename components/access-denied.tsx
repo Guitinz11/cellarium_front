@@ -21,7 +21,7 @@ export default function AccessDenied({ unavailable = false }: { unavailable?: bo
             ? "Não conseguimos confirmar suas credenciais agora. Verifique a conexão com o sistema e tente entrar novamente."
             : "Entre com uma conta válida e com o perfil autorizado para continuar."}
         </p>
-        <Button onClick={() => { clearApiSession(); window.localStorage.removeItem("cellarium-admin-token"); window.localStorage.removeItem("cellarium-admin-user"); router.replace("/login"); }} className="access-denied-action">
+        <Button onClick={() => { clearApiSession(); window.sessionStorage.removeItem("cellarium-admin-token"); window.sessionStorage.removeItem("cellarium-admin-user"); router.replace("/login"); }} className="access-denied-action">
           <ArrowLeft size={16} aria-hidden="true"/> Voltar para o login
         </Button>
         <p className="access-denied-footnote">Se você acredita que deveria ter acesso, fale com o administrador do sistema.</p>

@@ -19,7 +19,7 @@ export default function RequestChat({ role }: { role: ChatRole }) {
 
   useEffect(() => {
     function loadRequests() {
-      const employeeCode = window.localStorage.getItem("cellarium-requester-code");
+      const employeeCode = window.sessionStorage.getItem("cellarium-requester-code");
       const nextRequests = getAllRequests().filter((request) => role === "warehouse" || Boolean(employeeCode && request.employeeCode === employeeCode));
       setAvailableRequests(nextRequests);
       setSelectedId((current) => {

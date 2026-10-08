@@ -219,14 +219,14 @@ export class ApiUnavailableError extends Error {
 export function getAccessToken() {
   return typeof window === "undefined"
     ? ""
-    : (window.localStorage.getItem(accessTokenKey) ?? "");
+    : (window.sessionStorage.getItem(accessTokenKey) ?? "");
 }
 
 export function storeApiSession(token: string, user: ApiUser) {
   const normalizedProfile = normalizeUserProfile(user.perfil);
-  window.localStorage.setItem(accessTokenKey, token);
-  window.localStorage.setItem(userKey, JSON.stringify(user));
-  window.localStorage.setItem(
+  window.sessionStorage.setItem(accessTokenKey, token);
+  window.sessionStorage.setItem(userKey, JSON.stringify(user));
+  window.sessionStorage.setItem(
     "cellarium-user-role",
     normalizedProfile === "desconhecido"
       ? (user.perfil ?? "").trim().toLocaleLowerCase("pt-BR")
@@ -241,13 +241,17 @@ export function storeApiSession(token: string, user: ApiUser) {
   ]) {
     window.localStorage.removeItem(key);
   }
+  // Remove auth state left by older versions that shared a token across tabs.
+  window.localStorage.removeItem(accessTokenKey);
+  window.localStorage.removeItem(userKey);
+  window.localStorage.removeItem("cellarium-user-role");
 }
 
 export function getStoredApiUser(): ApiUser | null {
   if (typeof window === "undefined") return null;
   try {
     const value: unknown = JSON.parse(
-      window.localStorage.getItem(userKey) ?? "null",
+      window.sessionStorage.getItem(userKey) ?? "null",
     );
     if (!value || typeof value !== "object") return null;
     const user = value as Partial<ApiUser>;
@@ -262,8 +266,12 @@ export function getStoredApiUser(): ApiUser | null {
 }
 
 export function clearApiSession() {
+  window.sessionStorage.removeItem(accessTokenKey);
+  window.sessionStorage.removeItem(userKey);
+  window.sessionStorage.removeItem("cellarium-user-role");
   window.localStorage.removeItem(accessTokenKey);
   window.localStorage.removeItem(userKey);
+  window.localStorage.removeItem("cellarium-user-role");
 }
 
 function errorMessage(payload: unknown, fallback: string) {

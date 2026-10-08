@@ -11,15 +11,15 @@ export function subscribeToRequesterSession(callback: () => void) {
 }
 
 export function getRequesterCode(): string {
-  return window.localStorage.getItem(employeeCodeKey) ?? "";
+  return window.sessionStorage.getItem(employeeCodeKey) ?? "";
 }
 
 export function getRequesterSector(): string {
-  return window.localStorage.getItem(employeeSectorKey) ?? "";
+  return window.sessionStorage.getItem(employeeSectorKey) ?? "";
 }
 
 export function getUserRole(): string {
-  return window.localStorage.getItem("cellarium-user-role") ?? "";
+  return window.sessionStorage.getItem("cellarium-user-role") ?? "";
 }
 
 export function getServerRequesterValue(): string {

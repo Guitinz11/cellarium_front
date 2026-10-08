@@ -65,11 +65,11 @@ export default function LoginPage() {
         session.usuario.perfil.trim().toLocaleUpperCase("pt-BR") === "ADMIN"
       ) {
         storeApiSession(session.access_token, session.usuario);
-        window.localStorage.setItem(
+        window.sessionStorage.setItem(
           "cellarium-admin-token",
           session.access_token,
         );
-        window.localStorage.setItem(
+        window.sessionStorage.setItem(
           "cellarium-admin-user",
           JSON.stringify(session.usuario),
         );
@@ -103,11 +103,11 @@ export default function LoginPage() {
           );
           return;
         }
-        window.localStorage.setItem(
+        window.sessionStorage.setItem(
           "cellarium-requester-code",
           session.usuario.login,
         );
-        window.localStorage.setItem(
+        window.sessionStorage.setItem(
           "cellarium-requester-sector",
           requesterSector,
         );

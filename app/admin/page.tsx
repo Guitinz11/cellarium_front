@@ -31,7 +31,7 @@ export default function AdminPage() {
   const loadData = useCallback(async (authToken: string) => {
     const me = await adminRequest<{ perfil: string }>("/auth/me", authToken);
     if (me.perfil !== "ADMIN") {
-      window.localStorage.removeItem("cellarium-admin-token");
+      window.sessionStorage.removeItem("cellarium-admin-token");
       router.replace("/acesso-negado");
       return;
     }
@@ -44,7 +44,7 @@ export default function AdminPage() {
   }, [router]);
 
   useEffect(() => {
-    const storedToken = window.localStorage.getItem("cellarium-admin-token");
+    const storedToken = window.sessionStorage.getItem("cellarium-admin-token");
     if (!storedToken) {
       router.replace("/acesso-negado");
       return;
@@ -55,8 +55,8 @@ export default function AdminPage() {
     void loadData(storedToken).catch((cause: unknown) => {
       setError(cause instanceof Error ? cause.message : "Não foi possível carregar o painel.");
       if (cause instanceof AdminApiError && (cause.status === 401 || cause.status === 403)) {
-        window.localStorage.removeItem("cellarium-admin-token");
-        window.localStorage.removeItem("cellarium-admin-user");
+        window.sessionStorage.removeItem("cellarium-admin-token");
+        window.sessionStorage.removeItem("cellarium-admin-user");
         router.replace("/acesso-negado");
       }
     });
@@ -164,8 +164,8 @@ export default function AdminPage() {
   }
 
   function logout() {
-    window.localStorage.removeItem("cellarium-admin-token");
-    window.localStorage.removeItem("cellarium-admin-user");
+    window.sessionStorage.removeItem("cellarium-admin-token");
+    window.sessionStorage.removeItem("cellarium-admin-user");
     router.replace("/login");
   }
 

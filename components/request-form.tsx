@@ -39,7 +39,7 @@ export default function RequestForm() {
       requester,
       sector,
       shift,
-      employeeCode: window.localStorage.getItem("cellarium-requester-code") ?? undefined,
+      employeeCode: window.sessionStorage.getItem("cellarium-requester-code") ?? undefined,
       notes: notes.trim() || undefined,
       date: new Intl.DateTimeFormat("pt-BR").format(new Date(`${neededDate}T12:00:00`)),
       status: "Pendente",
