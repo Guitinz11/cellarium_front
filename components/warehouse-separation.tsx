@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useEffectEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Check, RefreshCw, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ClipboardList, RefreshCw, UserRound } from "lucide-react";
 import { Button, PageHeading } from "@/components/ui";
 import {
   ApiError,
@@ -49,7 +49,6 @@ export default function WarehouseSeparation() {
     setError("");
     if (!identifier) {
       setRequest(null);
-      setError("Informe o código da requisição para abrir o detalhe.");
       setLoading(false);
       return;
     }
@@ -145,7 +144,11 @@ export default function WarehouseSeparation() {
         {(canSeparateItems || canFinalize) && <footer className="flex flex-col-reverse gap-3 border-t border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><p className="text-xs text-slate-500">{canFinalize ? "Todos os itens estão separados." : "Marque cada produto depois de concluir sua separação física."}</p><div className="flex flex-col-reverse gap-2 sm:flex-row"><Link href="/fila" className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50">Voltar</Link><Button onClick={() => void confirmSeparation()} loading={submitting && canFinalize} disabled={submitting || !canFinalize}><Check size={16}/>{canFinalize ? "Finalizar requisição" : "Separe todos os itens"}</Button></div></footer>}
       </section>
       <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 sm:p-6"><h2 className="text-sm font-semibold text-slate-900">Dados da requisição</h2><div className="mt-4 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600"><UserRound size={17}/></span><div><p className="text-xs font-semibold text-slate-800">{request.solicitante}</p><p className="mt-1 text-[11px] text-slate-500">Solicitante</p></div></div><dl className="mt-5 divide-y divide-slate-100 border-y border-slate-100 text-xs"><div className="flex justify-between gap-3 py-3"><dt className="text-slate-500">Setor</dt><dd className="text-right font-semibold text-slate-800">{request.setor.nome}</dd></div><div className="flex justify-between gap-3 py-3"><dt className="text-slate-500">Separador</dt><dd className="text-right font-semibold text-slate-800">{request.separador ?? "A definir"}</dd></div><div className="flex justify-between gap-3 py-3"><dt className="text-slate-500">Itens</dt><dd className="font-semibold text-slate-800">{request.itens.length}</dd></div></dl>{request.observacao && <p className="mt-4 text-xs leading-5 text-slate-600">{request.observacao}</p>}</aside>
-    </div> : !error && <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">Requisição não encontrada.</div>}
-    {!request && error && !loading && <Button variant="secondary" onClick={() => void reload()}><RefreshCw size={15}/>Tentar novamente</Button>}
+    </div> : !identifier ? <section className="separation-empty-state" aria-labelledby="separation-empty-title">
+      <span className="separation-empty-icon" aria-hidden="true"><ClipboardList size={22}/></span>
+      <div><p className="separation-empty-eyebrow">Fila de separação</p><h2 id="separation-empty-title">Tudo em dia</h2><p>Não há uma requisição aberta nesta tela. Quando houver itens para separar, você pode acessá-los pela fila.</p></div>
+      <Link href="/fila" className="ui-button ui-button--secondary">Ver fila<ArrowRight size={15}/></Link>
+    </section> : !error && <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">Requisição não encontrada.</div>}
+    {!request && identifier && error && !loading && <Button variant="secondary" onClick={() => void reload()}><RefreshCw size={15}/>Tentar novamente</Button>}
   </>;
 }
