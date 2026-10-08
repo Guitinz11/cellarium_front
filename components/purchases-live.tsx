@@ -217,9 +217,14 @@ export default function PurchasesLive() {
       eyebrow="Suprimentos"
       title="Compras de Materiais"
       description="Priorize a reposição dos materiais com saldo crítico ou abaixo do mínimo."
-      action={<Button onClick={() => void exportSpreadsheet()} loading={exporting} disabled={loading || Boolean(error)}>
-        <Download size={16} aria-hidden="true"/>Gerar planilha de compras
-      </Button>}
+      action={<div className="flex flex-wrap gap-2">
+        <Button onClick={() => void exportSpreadsheet()} loading={exporting} disabled={loading || Boolean(error)}>
+          <Download size={16} aria-hidden="true"/>Gerar planilha de compras
+        </Button>
+        <Button variant="secondary" disabled title="Integração com TOTVS ainda indisponível">
+          Requisição de compra para o TOTVS
+        </Button>
+      </div>}
     />
 
     {notice && <p role={noticeTone === "error" ? "alert" : "status"} aria-live="polite" className={`mb-5 rounded-lg border px-4 py-3 text-sm font-medium ${noticeTone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : noticeTone === "warning" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-rose-200 bg-rose-50 text-rose-800"}`}>{notice}</p>}
