@@ -374,6 +374,8 @@ button[class*="bg-brand"]:active:not(:disabled), a[class*="bg-brand"]:active { t
 .admin-active { color: var(--success); font-size: 11px; font-weight: 500; }
 .admin-muted { color: var(--muted); font-size: 11px; }
 .admin-delete-button:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, var(--surface)); }
+.admin-permanent-delete-button { color: var(--muted); }
+.admin-permanent-delete-button:hover:not(:disabled) { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); }
 .admin-reactivate { min-height: 36px; border-radius: 7px; padding: 0 10px; color: var(--success); font-size: 11px; font-weight: 600; }
 .admin-reactivate:hover { background: color-mix(in srgb, var(--success) 9%, var(--surface)); }
 .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
