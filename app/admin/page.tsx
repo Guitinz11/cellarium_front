@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Boxes, Building2, Check, LogOut, Pencil, Plus, ShieldCheck, UserRound, UserX, X } from "lucide-react";
+import { Boxes, Building2, Check, LogOut, Pencil, Plus, ShieldCheck, Trash2, UserRound, UserX, X } from "lucide-react";
 import { AdminApiError, adminRequest, type AdminSector, type AdminUser } from "@/lib/admin-api";
 import ThemeToggle from "@/components/theme-toggle";
 import BrandLogo from "@/components/brand-logo";
@@ -111,11 +111,24 @@ export default function AdminPage() {
     if (!window.confirm(`Desativar o acesso de ${user.nome}? O histórico será preservado.`)) return;
     setBusy(true); setError(""); setNotice("");
     try {
-      await adminRequest<{ message: string }>(`/usuarios/${user.id}`, tokenRef.current, { method: "DELETE" });
+      await adminRequest<AdminUser>(`/usuarios/${user.id}`, tokenRef.current, { method: "PUT", body: JSON.stringify({ ativo: false }) });
       setNotice(`Acesso de ${user.nome} desativado.`);
       await loadData(tokenRef.current);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível desativar a conta.");
+    } finally { setBusy(false); }
+  }
+
+  async function deleteUser(user: AdminUser) {
+    if (!window.confirm(`Excluir permanentemente ${user.nome} (${user.login})? Esta ação não pode ser desfeita. Se houver registros históricos vinculados, a exclusão será impedida; nesse caso, desative o acesso.`)) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await adminRequest<{ message: string }>(`/usuarios/${user.id}`, tokenRef.current, { method: "DELETE" });
+      setNotice(result.message || `Conta de ${user.nome} excluída permanentemente.`);
+      if (editingUser?.id === user.id) cancelEditingUser();
+      await loadData(tokenRef.current);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível excluir a conta.");
     } finally { setBusy(false); }
   }
 
@@ -177,7 +190,7 @@ export default function AdminPage() {
       {tab === "users" ? <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="admin-panel">
           <div className="admin-panel-head"><div><h2>Contas do sistema</h2><p>{profileCounts.admins} administradores · {profileCounts.requesters} solicitantes ativos</p></div></div>
-          <div className="overflow-x-auto"><table className="admin-table responsive-table w-full min-w-[650px] text-left text-sm"><thead><tr><th className="px-5 py-3">Pessoa</th><th className="px-4 py-3">Login</th><th className="px-4 py-3">Perfil</th><th className="px-4 py-3">Estado</th><th className="px-5 py-3 text-right">Ações</th></tr></thead><tbody>{users.map((user) => <tr key={user.id}><td data-label="Pessoa" className="px-5 py-3.5 font-medium">{user.nome}</td><td data-label="Login" className="px-4 py-3.5">{user.login}</td><td data-label="Perfil" className="px-4 py-3.5"><span className="admin-tag">{user.perfil}</span></td><td data-label="Estado" className="px-4 py-3.5"><span className={user.ativo ? "admin-active" : "admin-muted"}>{user.ativo ? "Ativo" : "Desativado"}</span></td><td data-label="Ações" className="px-5 py-3.5 text-right"><div className="flex justify-end gap-1"><button type="button" disabled={busy} onClick={() => startEditingUser(user)} aria-label={`Editar ${user.nome}`} title="Editar usuário" className="shell-icon-button"><Pencil size={16}/></button>{user.ativo ? <button type="button" disabled={busy} onClick={() => void deactivateUser(user)} aria-label={`Desativar ${user.nome}`} title="Desativar usuário" className="shell-icon-button admin-delete-button"><UserX size={16}/></button> : <button type="button" disabled={busy} onClick={() => void reactivateUser(user)} className="admin-reactivate">Reativar</button>}</div></td></tr>)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="admin-table responsive-table w-full min-w-[650px] text-left text-sm"><thead><tr><th className="px-5 py-3">Pessoa</th><th className="px-4 py-3">Login</th><th className="px-4 py-3">Perfil</th><th className="px-4 py-3">Estado</th><th className="px-5 py-3 text-right">Ações</th></tr></thead><tbody>{users.map((user) => <tr key={user.id}><td data-label="Pessoa" className="px-5 py-3.5 font-medium">{user.nome}</td><td data-label="Login" className="px-4 py-3.5">{user.login}</td><td data-label="Perfil" className="px-4 py-3.5"><span className="admin-tag">{user.perfil}</span></td><td data-label="Estado" className="px-4 py-3.5"><span className={user.ativo ? "admin-active" : "admin-muted"}>{user.ativo ? "Ativo" : "Desativado"}</span></td><td data-label="Ações" className="px-5 py-3.5 text-right"><div className="flex justify-end gap-1"><button type="button" disabled={busy} onClick={() => startEditingUser(user)} aria-label={`Editar ${user.nome}`} title="Editar usuário" className="shell-icon-button"><Pencil size={16}/></button>{user.ativo ? <button type="button" disabled={busy} onClick={() => void deactivateUser(user)} aria-label={`Desativar ${user.nome}`} title="Desativar usuário" className="shell-icon-button admin-delete-button"><UserX size={16}/></button> : <button type="button" disabled={busy} onClick={() => void reactivateUser(user)} className="admin-reactivate">Reativar</button>}<button type="button" disabled={busy} onClick={() => void deleteUser(user)} aria-label={`Excluir permanentemente ${user.nome}`} title="Excluir permanentemente" className="shell-icon-button admin-permanent-delete-button"><Trash2 size={16}/></button></div></td></tr>)}</tbody></table></div>
           {users.length === 0 && <p className="p-8 text-center text-sm text-slate-500">Nenhuma conta encontrada.</p>}
         </Card>
         <Card className="admin-panel admin-form-panel">
