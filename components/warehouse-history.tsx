@@ -71,7 +71,7 @@ export default function WarehouseHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [exportPeriod, setExportPeriod] = useState("30");
+  const [exportPeriod, setExportPeriod] = useState("all");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [exportError, setExportError] = useState("");
@@ -131,6 +131,7 @@ export default function WarehouseHistory() {
       start = new Date(end);
       start.setDate(start.getDate() - (days - 1));
       start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
     }
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
     return filtered.filter((movement) => {
@@ -166,21 +167,24 @@ export default function WarehouseHistory() {
         { header: "Observação", key: "note", width: 42 },
       ];
       worksheet.columns = columns;
-      worksheet.addRows(exportMovements.map((movement) => ({
-        date: new Date(movement.data),
-        request: movement.requisicao_numero ?? (movement.requisicao_id ? `REQ-${movement.requisicao_id}` : "Movimentação avulsa"),
-        type: movementType(movement.tipo),
-        sector: movement.setor ?? "",
-        material: movement.material,
-        quantity: movement.quantidade,
-        unit: movement.unidade ?? "",
-        requester: movement.solicitante ?? "",
-        operator: movement.separador ?? "",
-        user: movement.usuario,
-        before: movement.estoque_anterior,
-        after: movement.estoque_posterior,
-        note: movement.observacao ?? "-",
-      })));
+      worksheet.addRows(exportMovements.map((movement) => {
+        const movementDate = new Date(movement.data);
+        return {
+          date: Number.isNaN(movementDate.getTime()) ? "" : movementDate,
+          request: movement.requisicao_numero ?? (movement.requisicao_id ? `REQ-${movement.requisicao_id}` : "Movimentação avulsa"),
+          type: movementType(movement.tipo),
+          sector: movement.setor ?? "",
+          material: movement.material,
+          quantity: movement.quantidade,
+          unit: movement.unidade ?? "",
+          requester: movement.solicitante ?? "",
+          operator: movement.separador ?? "",
+          user: movement.usuario,
+          before: movement.estoque_anterior,
+          after: movement.estoque_posterior,
+          note: movement.observacao ?? "-",
+        };
+      }));
       worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
       worksheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF23466B" } };
       worksheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: exportMovements.length + 1, column: columns.length } };
